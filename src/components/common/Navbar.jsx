@@ -23,8 +23,8 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-brand-border-gray">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
             <Logo size="md" />
@@ -68,10 +68,10 @@ export default function Navbar() {
               Log In
             </Link>
             <Link
-              to="/signup"
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-brand-navy hover:bg-brand-navy-light rounded-lg shadow-sm hover:shadow transition-all inline-flex items-center gap-1.5"
+              to="/surveys/new"
+              className="ui-interactive inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover"
             >
-              Get Started
+              Create a Survey
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -129,11 +129,11 @@ export default function Navbar() {
               Log In
             </Link>
             <Link
-              to="/signup"
+              to="/surveys/new"
               onClick={() => setMobileMenuOpen(false)}
               className="w-full text-center py-2.5 text-sm font-semibold text-white bg-brand-navy hover:bg-brand-navy-light rounded-lg shadow-sm"
             >
-              Get Started Free
+              Create a Survey
             </Link>
           </div>
         </div>

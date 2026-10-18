@@ -1,77 +1,23 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Smartphone, CheckCircle, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Smartphone } from 'lucide-react';
 import SamplePollPreview from './SamplePollPreview';
 
 export default function Hero() {
-  return (
-    <section className="relative overflow-hidden bg-network-pattern pt-12 pb-20 sm:pt-16 sm:pb-28 border-b border-brand-border-gray">
-      {/* Decorative subtle ambient glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-brand-light-blue/40 rounded-full blur-3xl pointer-events-none -z-10" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          {/* Left Column: Headlines & CTA */}
-          <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-            {/* Tagline Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-light-blue border border-brand-border-gray text-xs sm:text-sm font-semibold text-brand-navy shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
-              <span>Smart Polling, Real Insights</span>
-            </div>
-
-            {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-brand-navy tracking-tight leading-[1.12]">
-              Turn Every Voice Into <span className="text-brand-orange">Insight.</span>
-            </h1>
-
-            {/* Supporting Text */}
-            <p className="text-lg sm:text-xl text-brand-text-secondary max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
-              Create interactive polls, collect audience opinions in real time, and turn responses into meaningful insights — all in one simple platform.
-            </p>
-
-            {/* Call to Actions */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
-              <Link
-                to="/signup"
-                className="w-full sm:w-auto px-7 py-3.5 text-base font-semibold text-white bg-brand-navy hover:bg-brand-navy-light rounded-xl shadow-md hover:shadow-lg transition-all inline-flex items-center justify-center gap-2 group"
-              >
-                <span>Create a Survey</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-              <Link
-                to="/join"
-                className="w-full sm:w-auto px-7 py-3.5 text-base font-semibold text-brand-navy bg-white hover:bg-brand-light-blue border border-brand-border-gray rounded-xl shadow-xs transition-colors inline-flex items-center justify-center gap-2"
-              >
-                <Smartphone className="w-4 h-4 text-brand-orange" />
-                <span>Join a Session</span>
-              </Link>
-            </div>
-
-            {/* Trust points */}
-            <div className="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-y-2 gap-x-6 text-xs text-brand-text-secondary">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                <span>Zero participant sign-up required</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-brand-orange flex-shrink-0" />
-                <span>Live word cloud & poll charts</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-brand-navy flex-shrink-0" />
-                <span>Firebase-powered real-time sync</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Realistic Interactive Poll Preview */}
-          <div className="lg:col-span-5 relative">
-            {/* Subtle decorative card backdrop */}
-            <div className="absolute -inset-1.5 bg-gradient-to-r from-brand-navy/10 to-brand-orange/10 rounded-3xl blur-md -z-10" />
-            <SamplePollPreview />
-          </div>
+  return <section className="relative isolate overflow-hidden bg-background px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-[4.5rem]">
+    <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-8 -z-10 h-48 w-48 rounded-full border-[28px] border-orange-100/80 sm:right-[42%] sm:top-12 sm:h-24 sm:w-24 sm:border-[14px]" />
+    <div className="mx-auto grid max-w-6xl items-center gap-9 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
+      <div className="text-center lg:text-left">
+        <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-accent-strong"><span className="h-1.5 w-7 rounded-full bg-accent" />Interactive polling, made simple</div>
+        <h1 className="mt-4 text-[2.65rem] font-bold leading-[1.07] tracking-[-0.04em] text-[#142E59] sm:text-5xl lg:text-[3.4rem]">Make every<br className="hidden lg:block" /> voice count<span className="text-accent-strong">.</span></h1>
+        <p className="mx-auto mt-5 max-w-lg text-base leading-7 text-muted sm:text-lg lg:mx-0">Bring your audience into the conversation. Collect ideas, run live polls, and see opinions take shape in real time.</p>
+        <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+          <Link to="/surveys/new" className="ui-interactive group inline-flex min-h-12 items-center justify-center gap-3 rounded-lg bg-primary px-5 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover hover:shadow-soft">Create a Survey<span className="grid h-6 w-6 place-items-center rounded-md bg-accent text-primary transition-transform group-hover:translate-x-0.5"><ArrowRight className="h-3.5 w-3.5" /></span></Link>
+          <Link to="/join" className="ui-interactive inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-border bg-white px-5 text-sm font-semibold text-primary hover:border-primary/30 hover:bg-white"><Smartphone className="h-4 w-4 text-accent-strong" />Join a Session</Link>
         </div>
+        <p className="mt-5 text-xs text-muted">No participant accounts required. Just share a code.</p>
       </div>
-    </section>
-  );
+      <div className="mx-auto w-full max-w-[610px] lg:max-w-none"><SamplePollPreview /></div>
+    </div>
+  </section>;
 }

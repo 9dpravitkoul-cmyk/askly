@@ -1,203 +1,50 @@
-import React, { useState } from 'react';
-import { Users, BarChart3, Cloud, CheckCircle2, QrCode } from 'lucide-react';
+import React from 'react';
+import { BarChart3, Cloud, Sparkles } from 'lucide-react';
+
+const options = [
+  { label: 'Product ideas', width: '78%' },
+  { label: 'Customer stories', width: '56%' },
+  { label: 'Team culture', width: '34%' },
+];
+
+function PollSample() {
+  return <section className="min-w-0 overflow-hidden rounded-xl border border-white/70 bg-white text-left shadow-sm">
+    <header className="flex min-h-12 items-center justify-between gap-2 border-b border-border px-3.5">
+      <span className="flex items-center gap-2 text-xs font-bold text-primary"><BarChart3 className="h-4 w-4 text-accent-strong" />Multiple Choice</span>
+      <span className="rounded-md bg-orange-50 px-1.5 py-1 text-[9px] font-bold uppercase tracking-wide text-amber-900">Sample</span>
+    </header>
+    <div className="p-3.5">
+      <p className="text-[13px] font-semibold leading-5 text-text">What should we explore next?</p>
+      <div className="mt-4 space-y-3">{options.map((option, index) => <div key={option.label}>
+        <div className="mb-1 flex items-center gap-2"><span className={`grid h-4 w-4 place-items-center rounded-full border ${index === 0 ? 'border-primary bg-primary text-white' : 'border-slate-300 bg-white'}`}>{index === 0 && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span><span className="truncate text-[11px] text-slate-700">{option.label}</span></div>
+        <div className="ml-6 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${index === 0 ? 'bg-accent' : 'bg-primary/55'}`} style={{ width: option.width }} /></div>
+      </div>)}</div>
+    </div>
+  </section>;
+}
+
+function WordCloudSample() {
+  return <section className="min-w-0 overflow-hidden rounded-xl border border-white/70 bg-white text-left shadow-sm">
+    <header className="flex min-h-12 items-center justify-between gap-2 border-b border-border px-3.5">
+      <span className="flex items-center gap-2 text-xs font-bold text-primary"><Cloud className="h-4 w-4 text-accent-strong" />Word Cloud</span>
+      <span className="rounded-md bg-orange-50 px-1.5 py-1 text-[9px] font-bold uppercase tracking-wide text-amber-900">Sample</span>
+    </header>
+    <div className="relative mx-3.5 my-3 h-[148px] overflow-hidden rounded-lg bg-[#F7F8FA]" aria-label="Illustrative word cloud with sample words">
+      <span className="absolute left-[8%] top-[13%] text-[11px] font-medium text-slate-600">Curious</span>
+      <span className="absolute left-[47%] top-[9%] text-[12px] font-semibold text-accent-strong">Ideas</span>
+      <span className="absolute left-[21%] top-[34%] text-lg font-bold tracking-tight text-primary">Together</span>
+      <span className="absolute left-[66%] top-[34%] text-[11px] font-medium text-slate-600">Listen</span>
+      <span className="absolute left-[13%] top-[65%] text-[12px] font-semibold text-primary/80">Inspire</span>
+      <span className="absolute left-[52%] top-[60%] text-xl font-bold tracking-tight text-primary">Voice</span>
+      <span className="absolute left-[73%] top-[76%] text-[10px] font-medium text-accent-strong">Share</span>
+    </div>
+  </section>;
+}
 
 export default function SamplePollPreview() {
-  const [activeTab, setActiveTab] = useState('choice'); // 'choice' | 'cloud'
-  const [selectedOption, setSelectedOption] = useState(0);
-  const [votes, setVotes] = useState({
-    0: 24, // Full-Stack React & Firebase
-    1: 18, // AI & Intelligent Agents
-    2: 12, // Cloud-Native Architecture
-    3: 7   // Cybersecurity & Zero Trust
-  });
-
-  const options = [
-    { id: 0, text: 'Full-Stack React & Firebase', color: 'bg-brand-navy' },
-    { id: 1, text: 'AI & Intelligent Agents', color: 'bg-brand-orange' },
-    { id: 2, text: 'Cloud-Native Architecture', color: 'bg-blue-500' },
-    { id: 3, text: 'Cybersecurity & Zero Trust', color: 'bg-slate-600' }
-  ];
-
-  const totalVotes = Object.values(votes).reduce((sum, v) => sum + v, 0);
-
-  const handleVote = (id) => {
-    if (selectedOption === id) return;
-    setVotes(prev => ({
-      ...prev,
-      [selectedOption]: Math.max(0, prev[selectedOption] - 1),
-      [id]: prev[id] + 1
-    }));
-    setSelectedOption(id);
-  };
-
-  const sampleWords = [
-    { text: 'Engaging', size: 'text-2xl font-bold', color: 'text-brand-navy' },
-    { text: 'Interactive', size: 'text-xl font-semibold', color: 'text-brand-orange' },
-    { text: 'Instant', size: 'text-lg font-medium', color: 'text-brand-navy-light' },
-    { text: 'Clean Design', size: 'text-xl font-bold', color: 'text-brand-navy' },
-    { text: 'Realtime', size: 'text-3xl font-extrabold', color: 'text-brand-orange' },
-    { text: 'Audience Insights', size: 'text-lg font-medium', color: 'text-slate-600' },
-    { text: 'Collaborative', size: 'text-xl font-semibold', color: 'text-brand-navy' },
-    { text: 'No-friction Join', size: 'text-base font-normal', color: 'text-brand-text-secondary' },
-    { text: 'Empowering', size: 'text-lg font-medium', color: 'text-brand-navy' },
-    { text: 'Dynamic', size: 'text-2xl font-bold', color: 'text-brand-navy-light' },
-    { text: 'Mobile First', size: 'text-base font-semibold', color: 'text-brand-orange' },
-  ];
-
-  return (
-    <div className="w-full bg-white rounded-2xl shadow-xl shadow-brand-navy/5 border border-brand-border-gray overflow-hidden transition-all">
-      {/* Top Session Bar */}
-      <div className="bg-brand-light-gray px-4 py-3 border-b border-brand-border-gray flex items-center justify-between text-xs sm:text-sm">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-          </span>
-          <span className="font-semibold text-brand-navy uppercase tracking-wider">Live Session</span>
-          <span className="hidden sm:inline text-brand-text-secondary">•</span>
-          <span className="hidden sm:inline font-mono font-medium text-brand-text-secondary bg-white px-2 py-0.5 rounded border border-brand-border-gray">
-            CODE: 489 201
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* View Mode Toggle */}
-          <div className="flex bg-white rounded-lg p-0.5 border border-brand-border-gray text-xs">
-            <button
-              onClick={() => setActiveTab('choice')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors flex items-center gap-1 ${
-                activeTab === 'choice'
-                  ? 'bg-brand-navy text-white shadow-xs'
-                  : 'text-brand-text-secondary hover:text-brand-navy'
-              }`}
-            >
-              <BarChart3 className="w-3.5 h-3.5" />
-              <span>Poll</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('cloud')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors flex items-center gap-1 ${
-                activeTab === 'cloud'
-                  ? 'bg-brand-navy text-white shadow-xs'
-                  : 'text-brand-text-secondary hover:text-brand-navy'
-              }`}
-            >
-              <Cloud className="w-3.5 h-3.5" />
-              <span>Word Cloud</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Preview Content */}
-      <div className="p-5 sm:p-6">
-        {activeTab === 'choice' ? (
-          <div>
-            <div className="mb-4">
-              <span className="text-xs font-semibold text-brand-orange uppercase tracking-wider">
-                Question 1 of 3
-              </span>
-              <h3 className="text-base sm:text-lg font-bold text-brand-navy mt-1 leading-snug">
-                Which technology would you most like to learn?
-              </h3>
-              <p className="text-xs text-brand-text-secondary mt-0.5">
-                Click an option below to test the live voting simulation.
-              </p>
-            </div>
-
-            {/* Multiple Choice Interactive List */}
-            <div className="space-y-2.5">
-              {options.map((opt) => {
-                const count = votes[opt.id] || 0;
-                const percentage = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
-                const isSelected = selectedOption === opt.id;
-
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => handleVote(opt.id)}
-                    className={`w-full text-left relative overflow-hidden rounded-xl border p-3.5 transition-all text-sm group ${
-                      isSelected
-                        ? 'border-brand-navy bg-brand-light-blue/40 shadow-xs'
-                        : 'border-brand-border-gray hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    {/* Animated Progress Bar fill behind content */}
-                    <div
-                      className="absolute inset-y-0 left-0 bg-brand-light-blue/60 transition-all duration-500 ease-out"
-                      style={{ width: `${percentage}%` }}
-                    />
-
-                    <div className="relative flex items-center justify-between z-10">
-                      <div className="flex items-center gap-2.5">
-                        <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center border text-xs transition-colors ${
-                            isSelected
-                              ? 'border-brand-navy bg-brand-navy text-white'
-                              : 'border-slate-300 group-hover:border-slate-400'
-                          }`}
-                        >
-                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5" />}
-                        </div>
-                        <span className={`font-medium ${isSelected ? 'text-brand-navy font-semibold' : 'text-brand-text-primary'}`}>
-                          {opt.text}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 pl-2 flex-shrink-0">
-                        <span className="text-xs text-brand-text-secondary font-mono">
-                          {count} votes
-                        </span>
-                        <span className="text-xs font-bold text-brand-navy font-mono w-9 text-right">
-                          {percentage}%
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
-          <div>
-            <div className="mb-3">
-              <span className="text-xs font-semibold text-brand-orange uppercase tracking-wider">
-                Question 2 of 3 • Word Cloud
-              </span>
-              <h3 className="text-base sm:text-lg font-bold text-brand-navy mt-1 leading-snug">
-                Describe our college in one word.
-              </h3>
-              <p className="text-xs text-brand-text-secondary mt-0.5">
-                Real-time frequency visualization generated from audience submissions.
-              </p>
-            </div>
-
-            {/* Word Cloud Visualizer */}
-            <div className="bg-brand-light-gray/60 rounded-xl p-6 border border-brand-border-gray min-h-[220px] flex flex-wrap items-center justify-center gap-3 text-center">
-              {sampleWords.map((word, idx) => (
-                <span
-                  key={idx}
-                  className={`${word.size} ${word.color} transition-all duration-300 hover:scale-110 cursor-default select-none px-2 py-0.5`}
-                >
-                  {word.text}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Footer Meta */}
-        <div className="mt-4 pt-3 border-t border-brand-border-gray flex items-center justify-between text-xs text-brand-text-secondary">
-          <div className="flex items-center gap-1.5">
-            <Users className="w-4 h-4 text-brand-navy" />
-            <span className="font-semibold text-brand-navy">{totalVotes + 1}</span>
-            <span>participants joined</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <QrCode className="w-3.5 h-3.5 text-brand-text-secondary" />
-            <span>Scan to vote</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="relative rounded-2xl bg-[#142E59] p-3.5 shadow-card sm:p-4">
+    <div className="mb-3 flex items-center justify-between gap-2 px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-blue-100"><span className="flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-accent" />Askly preview</span><span>Illustrative samples · not live</span></div>
+    <div className="grid gap-3 sm:grid-cols-2"><PollSample /><WordCloudSample /></div>
+    <div className="mt-3 flex items-center justify-between px-1 text-[10px] text-blue-100"><span>Multiple choice + open-ended</span><span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" /></div>
+  </div>;
 }

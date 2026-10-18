@@ -2,10 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light;
+  --color-primary: #193b70;
+  --color-primary-hover: #142e59;
+  --color-primary-dark: #142e59;
+  --color-primary-soft: #eef2f8;
+  --color-accent: #f59e0b;
+  --color-accent-strong: #925400;
+  --color-accent-hover: #764400;
+  --color-surface: #ffffff;
+  --color-background: #fafaf7;
+  --color-border: #e1e7f0;
+  --color-text: #17243b;
+  --color-muted: #52627a;
+  --color-success: #167447;
+  --color-warning: #8a4b08;
+  --color-danger: #b42318;
+  --shadow-focus: 0 0 0 3px rgba(27, 58, 107, 0.18);
+}
+
 @layer base {
+  html { scroll-behavior: smooth; }
+
   body {
-    @apply text-brand-text-primary bg-white font-sans;
+    @apply text-brand-text-primary bg-background font-sans;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  button, input, textarea, select { font: inherit; }
+  input:not([type="checkbox"]):not([type="radio"]), select { min-height: 2.75rem; }
+  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+}
+
+@layer components {
+  .ui-interactive { @apply transition duration-200 ease-out; }
+  .ui-interactive:active { transform: scale(0.98); }
+  .ui-card { @apply rounded-card border border-border bg-surface shadow-soft; }
+  .ui-field { @apply min-h-11 w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-text placeholder:text-muted transition duration-150; }
+  .ui-field:focus { outline: none; border-color: var(--color-primary); box-shadow: var(--shadow-focus); }
+  .ui-field:disabled { @apply cursor-not-allowed bg-background opacity-70; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

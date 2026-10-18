@@ -1,0 +1,282 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownsSurvey(surveyId) {
+      let path = /databases/$(database)/documents/surveys/$(surveyId);
+      return signedIn()
+        && exists(path)
+        && get(path).data.ownerUid == request.auth.uid;
+    }
+
+    function ownsSurveyAfterWrite(surveyId) {
+      let path = /databases/$(database)/documents/surveys/$(surveyId);
+      return signedIn()
+        && existsAfter(path)
+        && getAfter(path).data.ownerUid == request.auth.uid;
+    }
+
+    function activeSessionForSurvey(surveyId) {
+      let lockPath = /databases/$(database)/documents/surveySessionLocks/$(surveyId);
+      return exists(lockPath)
+        && get(lockPath).data.surveyId == surveyId
+        && get(lockPath).data.status == 'active'
+        && exists(/databases/$(database)/documents/sessions/$(get(lockPath).data.sessionId))
+        && get(/databases/$(database)/documents/sessions/$(get(lockPath).data.sessionId)).data.surveyId == surveyId
+        && get(/databases/$(database)/documents/sessions/$(get(lockPath).data.sessionId)).data.status == 'active';
+    }
+
+    function hasMatchingPublicSessionLookup(sessionId) {
+      let session = resource.data;
+      let lookupPath = /databases/$(database)/documents/sessionLookups/$(session.joinCode);
+      return signedIn()
+        && exists(lookupPath)
+        && get(lookupPath).data.sessionId == sessionId
+        && get(lookupPath).data.status == session.status
+        && get(lookupPath).data.surveyTitle == session.surveyTitle
+        && (!get(lookupPath).data.keys().hasAny(['surveyId'])
+          || get(lookupPath).data.surveyId == session.surveyId);
+    }
+
+    function validSurvey(data) {
+      return data.keys().hasAll(['title', 'description', 'ownerUid', 'status', 'questionCount', 'questionSearch', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['title', 'description', 'ownerUid', 'status', 'questionCount', 'questionSearch', 'createdAt', 'updatedAt'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 120
+        && data.description is string && data.description.size() <= 500
+        && data.ownerUid is string
+        && data.status in ['draft', 'published']
+        && data.questionCount is int && data.questionCount >= 0 && data.questionCount <= 200
+        && data.questionSearch is string && data.questionSearch.size() <= 65000
+        && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
+    function validQuestion(questionId, data) {
+      return data.keys().hasAll(['id', 'type', 'text', 'order'])
+        && data.id == questionId
+        && data.type in ['wordCloud', 'multipleChoice']
+        && data.text is string && data.text.size() > 0 && data.text.size() <= 300
+        && data.order is int && data.order >= 0 && data.order < 200
+        && (
+          (data.type == 'wordCloud'
+            && data.keys().hasOnly(['id', 'type', 'text', 'order', 'maxLength'])
+            && data.maxLength is int && data.maxLength >= 1 && data.maxLength <= 280)
+          ||
+          (data.type == 'multipleChoice'
+            && data.keys().hasOnly(['id', 'type', 'text', 'order', 'options'])
+            && data.options is list && data.options.size() >= 2 && data.options.size() <= 20)
+        );
+    }
+
+    function validJoinCode(code) {
+      return code.matches('^[A-HJ-NP-Z2-9]{8}$');
+    }
+
+    function validSession(data) {
+      return data.keys().hasAll(['surveyId', 'ownerUid', 'surveyTitle', 'joinCode', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['surveyId', 'ownerUid', 'surveyTitle', 'joinCode', 'status', 'createdAt', 'updatedAt'])
+        && data.surveyId is string && data.surveyId.size() > 0
+        && data.ownerUid is string
+        && data.surveyTitle is string && data.surveyTitle.size() > 0 && data.surveyTitle.size() <= 120
+        && data.joinCode is string && validJoinCode(data.joinCode)
+        && data.status in ['active', 'closed']
+        && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
+    function validSessionLookup(data) {
+      return data.keys().hasAll(['sessionId', 'surveyId', 'surveyTitle', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['sessionId', 'surveyId', 'surveyTitle', 'status', 'createdAt', 'updatedAt'])
+        && data.sessionId is string && data.sessionId.size() > 0
+        && data.surveyId is string && data.surveyId.size() > 0
+        && data.surveyTitle is string && data.surveyTitle.size() > 0 && data.surveyTitle.size() <= 120
+        && data.status in ['active', 'closed']
+        && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
+    function validVote(voteId, sessionId, questionId, data) {
+      let sessionPath = /databases/$(database)/documents/sessions/$(sessionId);
+      let session = get(sessionPath).data;
+      let questionPath = /databases/$(database)/documents/surveys/$(session.surveyId)/questions/$(questionId);
+      let question = get(questionPath).data;
+      return signedIn()
+        && exists(sessionPath)
+        && session.status == 'active'
+        && exists(questionPath)
+        && question.id == questionId
+        && voteId == questionId + '_' + request.auth.uid
+        && data.keys().hasAll(['questionId', 'participantUid', 'type', 'createdAt'])
+        && data.questionId == questionId
+        && data.participantUid == request.auth.uid
+        && data.createdAt == request.time
+        && (
+          (question.type == 'multipleChoice'
+            && data.type == 'multipleChoice'
+            && data.keys().hasOnly(['questionId', 'participantUid', 'type', 'createdAt', 'option'])
+            && data.option is map
+            && question.options.hasAny([data.option]))
+          ||
+          (question.type == 'wordCloud'
+            && data.type == 'wordCloud'
+            && data.keys().hasOnly(['questionId', 'participantUid', 'type', 'createdAt', 'response'])
+            && data.response is string
+            && data.response.size() > 0
+            && data.response.size() <= question.maxLength)
+        );
+    }
+
+    function validSessionLock(data, surveyId) {
+      return data.keys().hasAll(['ownerUid', 'surveyId', 'sessionId', 'status', 'updatedAt'])
+        && data.keys().hasOnly(['ownerUid', 'surveyId', 'sessionId', 'status', 'updatedAt'])
+        && data.ownerUid == request.auth.uid
+        && data.surveyId == surveyId
+        && data.sessionId is string && data.sessionId.size() > 0
+        && data.status in ['active', 'closed']
+        && data.updatedAt == request.time;
+    }
+
+    match /surveys/{surveyId} {
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && validSurvey(request.resource.data);
+
+      allow get, list: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow delete: if signedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && (!exists(/databases/$(database)/documents/surveySessionLocks/$(surveyId))
+          || get(/databases/$(database)/documents/surveySessionLocks/$(surveyId)).data.ownerUid == request.auth.uid
+            && get(/databases/$(database)/documents/surveySessionLocks/$(surveyId)).data.status == 'closed');
+
+      allow update: if signedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && validSurvey(request.resource.data);
+
+      match /questions/{questionId} {
+        // Participants can read the question content only while the survey has
+        // an active session. The survey document and all write access stay private.
+        allow get, list: if ownsSurvey(surveyId) || activeSessionForSurvey(surveyId);
+        allow create, update: if ownsSurveyAfterWrite(surveyId)
+          && validQuestion(questionId, request.resource.data);
+        allow delete: if signedIn()
+          && get(/databases/$(database)/documents/surveys/$(surveyId)).data.ownerUid == request.auth.uid;
+      }
+    }
+
+    // Owners can read their sessions. Participants can read the canonical
+    // survey reference only through a matching public join lookup; writes stay owner-only.
+    match /sessions/{sessionId} {
+      allow get: if signedIn()
+        && (!exists(/databases/$(database)/documents/sessions/$(sessionId))
+          || resource.data.ownerUid == request.auth.uid
+          || hasMatchingPublicSessionLookup(sessionId));
+      allow list: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && validSession(request.resource.data)
+        && exists(/databases/$(database)/documents/surveys/$(request.resource.data.surveyId))
+        && get(/databases/$(database)/documents/surveys/$(request.resource.data.surveyId)).data.ownerUid == request.auth.uid
+        && get(/databases/$(database)/documents/surveys/$(request.resource.data.surveyId)).data.title == request.resource.data.surveyTitle
+        && existsAfter(/databases/$(database)/documents/surveySessionLocks/$(request.resource.data.surveyId))
+        && getAfter(/databases/$(database)/documents/surveySessionLocks/$(request.resource.data.surveyId)).data.ownerUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/surveySessionLocks/$(request.resource.data.surveyId)).data.sessionId == sessionId;
+      allow update: if signedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.surveyId == resource.data.surveyId
+        && request.resource.data.surveyTitle == resource.data.surveyTitle
+        && request.resource.data.joinCode == resource.data.joinCode
+        && request.resource.data.createdAt == resource.data.createdAt
+        && validSession(request.resource.data)
+        && existsAfter(/databases/$(database)/documents/surveySessionLocks/$(resource.data.surveyId))
+        && getAfter(/databases/$(database)/documents/surveySessionLocks/$(resource.data.surveyId)).data.sessionId == sessionId
+        && getAfter(/databases/$(database)/documents/surveySessionLocks/$(resource.data.surveyId)).data.status == request.resource.data.status
+        && existsAfter(/databases/$(database)/documents/sessionLookups/$(resource.data.joinCode))
+        && getAfter(/databases/$(database)/documents/sessionLookups/$(resource.data.joinCode)).data.sessionId == sessionId
+        && getAfter(/databases/$(database)/documents/sessionLookups/$(resource.data.joinCode)).data.status == request.resource.data.status;
+      allow delete: if false;
+
+      // Votes are create-only for participants. Only the owning host can read
+      // them; the deterministic vote ID enforces one answer per question per Auth UID.
+      match /votes/{voteId} {
+        allow create: if validVote(voteId, sessionId, request.resource.data.questionId, request.resource.data);
+        allow get, list: if signedIn()
+          && exists(/databases/$(database)/documents/sessions/$(sessionId))
+          && get(/databases/$(database)/documents/sessions/$(sessionId)).data.ownerUid == request.auth.uid;
+      }
+    }
+
+    // Public lookup intentionally returns only a title and status. Direct gets
+    // by code are allowed; collection listing and all client writes are denied
+    // unless the authenticated owner creates/updates the matching session atomically.
+    match /sessionLookups/{joinCode} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if signedIn()
+        && validJoinCode(joinCode)
+        && validSessionLookup(request.resource.data)
+        && existsAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
+        && getAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.ownerUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.joinCode == joinCode
+        && getAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.surveyId == request.resource.data.surveyId
+        && getAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.surveyTitle == request.resource.data.surveyTitle
+        && getAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.status == request.resource.data.status;
+      allow update: if signedIn()
+        && validJoinCode(joinCode)
+        && validSessionLookup(request.resource.data)
+        && resource.data.sessionId == request.resource.data.sessionId
+        && resource.data.createdAt == request.resource.data.createdAt
+        && get(/databases/$(database)/documents/sessions/$(resource.data.sessionId)).data.ownerUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/sessions/$(resource.data.sessionId)).data.surveyId == request.resource.data.surveyId
+        && getAfter(/databases/$(database)/documents/sessions/$(resource.data.sessionId)).data.joinCode == joinCode
+        && getAfter(/databases/$(database)/documents/sessions/$(resource.data.sessionId)).data.status == request.resource.data.status
+        && getAfter(/databases/$(database)/documents/sessions/$(resource.data.sessionId)).data.surveyTitle == request.resource.data.surveyTitle;
+      allow delete: if false;
+    }
+
+    // A per-survey transactional lock prevents two simultaneous active rooms.
+    match /surveySessionLocks/{surveyId} {
+      allow get: if signedIn()
+        && (!exists(/databases/$(database)/documents/surveySessionLocks/$(surveyId))
+          || resource.data.ownerUid == request.auth.uid);
+      allow list: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create: if signedIn()
+        && validSessionLock(request.resource.data, surveyId)
+        && exists(/databases/$(database)/documents/surveys/$(surveyId))
+        && get(/databases/$(database)/documents/surveys/$(surveyId)).data.ownerUid == request.auth.uid
+        && existsAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
+        && getAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.ownerUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.surveyId == surveyId
+        && getAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.status == request.resource.data.status;
+      allow update: if signedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && validSessionLock(request.resource.data, surveyId)
+        && exists(/databases/$(database)/documents/surveys/$(surveyId))
+        && get(/databases/$(database)/documents/surveys/$(surveyId)).data.ownerUid == request.auth.uid
+        && existsAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId))
+        && getAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.ownerUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.surveyId == surveyId
+        && getAfter(/databases/$(database)/documents/sessions/$(request.resource.data.sessionId)).data.status == request.resource.data.status;
+      allow delete: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create: if signedIn() && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'createdAt', 'updatedAt'])
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if signedIn() && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'createdAt', 'updatedAt']);
+      allow delete: if false;
+    }
+  }
+}

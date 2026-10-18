@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Layers, Radio, BarChart3, ArrowRight } from 'lucide-react';
+import { Plus, Layers, BarChart3, ArrowRight } from 'lucide-react';
 
-export default function QuickActions({ onSelectTemplate, onSelectLiveSession, onSelectAnalytics }) {
+export default function QuickActions({ onSelectTemplate, onSelectAnalytics }) {
   const actions = [
     {
       id: 'create',
@@ -24,16 +24,6 @@ export default function QuickActions({ onSelectTemplate, onSelectLiveSession, on
       badge: 'Pre-made',
     },
     {
-      id: 'live',
-      title: 'Live Session',
-      description: 'Quick-launch an active room and project your audience join code.',
-      icon: Radio,
-      isPrimary: false,
-      onClick: onSelectLiveSession,
-      iconBg: 'bg-amber-50 text-brand-orange',
-      badge: 'Instant PIN',
-    },
-    {
       id: 'analytics',
       title: 'View Analytics',
       description: 'Inspect participant participation rates and historical poll trends.',
@@ -46,7 +36,7 @@ export default function QuickActions({ onSelectTemplate, onSelectLiveSession, on
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {actions.map((act) => {
         const Icon = act.icon;
 

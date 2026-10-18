@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Menu, HelpCircle, LogOut, User, Settings, ExternalLink, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { Search, Menu, HelpCircle, LogOut, User, Settings, ExternalLink, X, ShieldCheck } from 'lucide-react';
 
 export default function DashboardTopNav({
   searchTerm = '',
@@ -10,6 +11,9 @@ export default function DashboardTopNav({
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   // Close account menu on outside click
   useEffect(() => {
@@ -22,14 +26,34 @@ export default function DashboardTopNav({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      setAccountMenuOpen(false);
+      await logout();
+      navigate('/login');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
+
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'Askly Host';
+  const email = user?.email || 'host@askly.io';
+  const initials = (user?.displayName || user?.email || 'Host')
+    .split(' ')
+    .map(p => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'AH';
+
   return (
     <>
-      <header className="sticky top-0 z-30 h-20 bg-white/95 backdrop-blur-sm border-b border-brand-border-gray px-4 sm:px-8 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border bg-white px-4 sm:px-7">
         {/* Left: Mobile Menu Toggle & Search Bar */}
         <div className="flex items-center gap-3 sm:gap-4 flex-1 max-w-xl">
           <button
             onClick={onOpenSidebar}
-            className="lg:hidden p-2 rounded-xl text-brand-text-secondary hover:text-brand-navy hover:bg-brand-light-gray focus:outline-none focus:ring-2 focus:ring-brand-navy"
+              className="ui-interactive rounded-xl p-2 text-muted hover:bg-background hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden"
             aria-label="Open sidebar navigation"
           >
             <Menu className="w-5 h-5" />
@@ -43,12 +67,12 @@ export default function DashboardTopNav({
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search surveys by title, question, or format..."
-              className="w-full pl-10 pr-9 py-2 text-sm bg-brand-light-gray rounded-xl border border-brand-border-gray focus:outline-none focus:ring-2 focus:ring-brand-navy focus:bg-white transition-all text-brand-text-primary placeholder:text-brand-text-secondary/70"
+              className="ui-field min-h-10 w-full bg-background py-2 pl-10 pr-9 text-sm"
             />
             {searchTerm && (
               <button
                 onClick={() => onSearchChange('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-text-secondary hover:text-brand-navy"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted hover:text-primary"
                 aria-label="Clear search"
               >
                 <X className="w-4 h-4" />
@@ -62,7 +86,7 @@ export default function DashboardTopNav({
           {/* Functional Help Button */}
           <button
             onClick={() => setHelpModalOpen(true)}
-            className="p-2 rounded-xl text-brand-text-secondary hover:text-brand-navy hover:bg-brand-light-gray transition-colors border border-transparent hover:border-brand-border-gray"
+            className="ui-interactive rounded-xl p-2 text-muted hover:bg-background hover:text-primary"
             title="Help & Keyboard Shortcuts"
             aria-label="Help & Guide"
           >
@@ -73,25 +97,33 @@ export default function DashboardTopNav({
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setAccountMenuOpen(!accountMenuOpen)}
-              className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-brand-light-gray transition-colors focus:outline-none focus:ring-2 focus:ring-brand-navy border border-transparent hover:border-brand-border-gray"
+              className="ui-interactive flex items-center gap-2.5 rounded-xl p-1.5 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-expanded={accountMenuOpen}
               aria-label="User Account Menu"
             >
-              <div className="w-9 h-9 rounded-xl bg-brand-navy text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                AM
-              </div>
+              {user?.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt={displayName}
+                  className="w-9 h-9 rounded-xl object-cover border border-brand-border-gray shadow-xs"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-xl bg-brand-navy text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                  {initials}
+                </div>
+              )}
               <div className="hidden sm:block text-left text-xs leading-tight">
-                <span className="block font-semibold text-brand-navy">Prof. Alex Morgan</span>
+                <span className="block font-semibold text-brand-navy max-w-[120px] truncate">{displayName}</span>
                 <span className="block text-[11px] text-brand-text-secondary">Host Presenter</span>
               </div>
             </button>
 
             {/* Account Menu Dropdown */}
             {accountMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-brand-border-gray shadow-xl py-2 z-50 text-sm">
-                <div className="px-4 py-2 border-b border-brand-border-gray sm:hidden">
-                  <p className="font-semibold text-brand-navy">Prof. Alex Morgan</p>
-                  <p className="text-xs text-brand-text-secondary truncate">alex.morgan@university.edu</p>
+              <div className="absolute right-0 z-50 mt-2 w-60 rounded-2xl border border-border bg-white py-2 text-sm shadow-card">
+                <div className="px-4 py-2.5 border-b border-brand-border-gray">
+                  <p className="font-semibold text-brand-navy text-xs truncate">{displayName}</p>
+                  <p className="text-[11px] text-brand-text-secondary truncate mt-0.5">{email}</p>
                 </div>
 
                 <Link
@@ -100,19 +132,19 @@ export default function DashboardTopNav({
                   className="flex items-center gap-2.5 px-4 py-2 text-brand-text-secondary hover:text-brand-navy hover:bg-brand-light-gray transition-colors text-xs font-medium"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  <span>View Public Landing Page</span>
+                  <span>Public Landing Page</span>
                 </Link>
 
                 <div className="my-1 border-t border-brand-border-gray" />
 
-                <Link
-                  to="/login"
-                  onClick={() => setAccountMenuOpen(false)}
-                  className="flex items-center gap-2.5 px-4 py-2 text-rose-600 hover:bg-rose-50 transition-colors text-xs font-semibold"
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full text-left flex items-center gap-2.5 px-4 py-2 text-rose-600 hover:bg-rose-50 transition-colors text-xs font-semibold"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Log Out</span>
-                </Link>
+                </button>
               </div>
             )}
           </div>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import Logo from '../components/common/Logo';
@@ -9,19 +9,24 @@ export default function JoinPage() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const queryCode = searchParams.get('code');
+    if (queryCode) navigate(`/session/${queryCode.replace(/\s/g, '').toUpperCase()}`, { replace: true });
+  }, [navigate, searchParams]);
 
   const handleJoin = (e) => {
     e.preventDefault();
-    const cleanCode = code.replace(/\s+/g, '').trim();
+    const cleanCode = code.replace(/\s+/g, '').trim().toUpperCase();
     if (!cleanCode) {
       setError('Please enter a session code');
       return;
     }
-    if (cleanCode.length < 6) {
-      setError('Session code should be 6 digits (e.g. 489201)');
+    if (!/^[A-HJ-NP-Z2-9]{8}$/.test(cleanCode)) {
+      setError('Enter the 8-character code shown by your host.');
       return;
     }
-    // Will navigate to active session view in Phase 5
     navigate(`/session/${cleanCode}`);
   };
 
@@ -29,7 +34,7 @@ export default function JoinPage() {
     <div className="min-h-screen flex flex-col bg-brand-light-gray">
       <Navbar />
       <div className="flex-grow flex items-center justify-center px-4 py-16">
-        <div className="max-w-md w-full bg-white rounded-2xl border border-brand-border-gray shadow-lg p-8 sm:p-10 text-center">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-white p-6 text-center shadow-card sm:p-8">
           <div className="flex justify-center mb-6">
             <Logo size="lg" />
           </div>
@@ -43,7 +48,7 @@ export default function JoinPage() {
             Join a Live Session
           </h1>
           <p className="text-sm text-brand-text-secondary mb-8">
-            Enter the 6-digit code shown on the host presenter screen.
+            Enter the 8-character code shown on the host screen.
           </p>
 
           <form onSubmit={handleJoin} className="space-y-4">
@@ -59,8 +64,9 @@ export default function JoinPage() {
                   setCode(e.target.value);
                   setError('');
                 }}
-                placeholder="123 456"
-                maxLength={8}
+                placeholder="ABCD 2345"
+                maxLength={10}
+                autoCapitalize="characters"
                 className="w-full text-center text-2xl sm:text-3xl font-mono font-bold tracking-widest py-3.5 px-4 rounded-xl border border-brand-border-gray focus:outline-none focus:ring-2 focus:ring-brand-navy bg-brand-light-gray/50 uppercase"
                 autoFocus
               />
