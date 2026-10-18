@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply text-brand-text-primary bg-white font-sans;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Subtle Network Node Pattern for Backgrounds */
+.bg-network-pattern {
+  background-color: #ffffff;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(24, 57, 108, 0.04) 0%, transparent 20%),
+    radial-gradient(circle at 85% 30%, rgba(243, 154, 36, 0.04) 0%, transparent 25%),
+    radial-gradient(circle at 50% 80%, rgba(24, 57, 108, 0.03) 0%, transparent 30%),
+    radial-gradient(#18396c 0.75px, transparent 0.75px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px;
+}
+
+.bg-network-dots {
+  background-image: radial-gradient(rgba(24, 57, 108, 0.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
