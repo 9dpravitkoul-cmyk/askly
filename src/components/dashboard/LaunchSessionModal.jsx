@@ -7,10 +7,11 @@ export default function LaunchSessionModal({ survey, onClose }) {
   const [copied, setCopied] = useState(false);
   if (!survey) return null;
 
-  const code = survey.joinCode || '489201';
-  const joinUrl = `${window.location.origin}/join?code=${code}`;
+  const code = /^[A-HJ-NP-Z2-9]{8}$/.test(survey.joinCode || '') ? survey.joinCode : '';
+  const joinUrl = code ? new URL(`/session/${code}`, window.location.origin).toString() : '';
 
   const handleCopy = () => {
+    if (!joinUrl) return;
     navigator.clipboard.writeText(joinUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -47,7 +48,7 @@ export default function LaunchSessionModal({ survey, onClose }) {
             Audience Join PIN
           </span>
           <span className="text-4xl sm:text-5xl font-mono font-black text-brand-navy tracking-widest select-all">
-            {code.length === 6 ? `${code.slice(0, 3)} ${code.slice(3)}` : code}
+            {code ? `${code.slice(0, 4)} ${code.slice(4)}` : 'Unavailable'}
           </span>
           <span className="text-[11px] text-brand-text-secondary block mt-1">
             Go to <span className="font-semibold text-brand-navy">{window.location.host}/join</span>
@@ -56,8 +57,8 @@ export default function LaunchSessionModal({ survey, onClose }) {
 
         {/* QR Code and Quick Share */}
         <div className="flex flex-col sm:flex-row items-center gap-4 bg-white rounded-xl p-4 border border-brand-border-gray mb-6">
-          <div className="bg-white p-2 rounded-lg border border-brand-border-gray shadow-xs flex-shrink-0">
-            <QRCodeSVG value={joinUrl} size={100} level="M" />
+          <div className="bg-white p-3 rounded-lg border border-brand-border-gray shadow-xs flex-shrink-0">
+            {joinUrl ? <QRCodeSVG value={joinUrl} size={220} level="Q" includeMargin className="block h-auto max-w-full" aria-label={`QR code to join session ${code}`} /> : <p className="grid h-[220px] w-[220px] place-items-center text-center text-xs text-brand-text-secondary">Start a live session to generate a valid join QR code.</p>}
           </div>
           <div className="flex-1 text-center sm:text-left space-y-2">
             <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs font-semibold text-brand-navy">
@@ -69,6 +70,7 @@ export default function LaunchSessionModal({ survey, onClose }) {
             </p>
             <button
               onClick={handleCopy}
+              disabled={!joinUrl}
               className="px-3 py-1.5 bg-brand-light-blue hover:bg-brand-light-blue/70 text-brand-navy text-xs font-semibold rounded-lg border border-brand-border-gray transition-colors inline-flex items-center gap-1.5"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -80,7 +82,8 @@ export default function LaunchSessionModal({ survey, onClose }) {
         {/* Host Actions */}
         <div className="flex flex-col sm:flex-row gap-2.5">
           <Link
-            to={`/join?code=${code}`}
+            to={code ? `/session/${code}` : '/join'}
+            aria-disabled={!code}
             target="_blank"
             rel="noreferrer"
             className="flex-1 py-2.5 px-4 bg-brand-light-gray hover:bg-slate-200 text-brand-navy text-xs font-semibold rounded-xl border border-brand-border-gray transition-colors flex items-center justify-center gap-1.5"
