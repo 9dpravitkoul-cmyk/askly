@@ -5,6 +5,7 @@ import JoinPage from './pages/JoinPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
+import CreateSurveyPlaceholderPage from './pages/CreateSurveyPlaceholderPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
@@ -15,6 +16,8 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/surveys/new" element={<CreateSurveyPlaceholderPage />} />
+      <Route path="/surveys/:id/edit" element={<CreateSurveyPlaceholderPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

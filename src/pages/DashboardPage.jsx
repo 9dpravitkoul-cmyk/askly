@@ -1,38 +1,143 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import Logo from '../components/common/Logo';
-import { LayoutDashboard, Plus, ArrowLeft } from 'lucide-react';
+import React, { useState } from 'react';
+import DashboardSidebar from '../components/dashboard/DashboardSidebar';
+import DashboardTopNav from '../components/dashboard/DashboardTopNav';
+import WelcomeBanner from '../components/dashboard/WelcomeBanner';
+import QuickActions from '../components/dashboard/QuickActions';
+import SurveyList from '../components/dashboard/SurveyList';
+import SurveyPreviewModal from '../components/dashboard/SurveyPreviewModal';
+import LaunchSessionModal from '../components/dashboard/LaunchSessionModal';
+import TemplatesView from '../components/dashboard/TemplatesView';
+import AnalyticsView from '../components/dashboard/AnalyticsView';
+import ProfileView from '../components/dashboard/ProfileView';
+import SettingsView from '../components/dashboard/SettingsView';
+import { INITIAL_MOCK_SURVEYS } from '../data/mockSurveys';
 
 export default function DashboardPage() {
+  const [currentView, setCurrentView] = useState('surveys'); // 'home' | 'surveys' | 'templates' | 'analytics' | 'profile' | 'settings'
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [surveys, setSurveys] = useState(INITIAL_MOCK_SURVEYS);
+  const [previewSurvey, setPreviewSurvey] = useState(null);
+  const [launchSurvey, setLaunchSurvey] = useState(null);
+
+  const activeSurveysCount = surveys.filter(s => s.status === 'active').length;
+
   return (
-    <div className="min-h-screen bg-brand-light-gray flex flex-col">
-      <header className="bg-white border-b border-brand-border-gray px-6 py-4 flex items-center justify-between">
-        <Logo size="md" />
-        <Link
-          to="/"
-          className="text-xs text-brand-navy font-semibold flex items-center gap-1 hover:underline"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Home</span>
-        </Link>
-      </header>
-      <div className="flex-grow flex items-center justify-center p-6 text-center">
-        <div className="max-w-md bg-white p-8 rounded-2xl border border-brand-border-gray shadow-sm">
-          <div className="w-12 h-12 rounded-xl bg-brand-light-blue text-brand-navy flex items-center justify-center mx-auto mb-4">
-            <LayoutDashboard className="w-6 h-6" />
-          </div>
-          <h2 className="text-xl font-bold text-brand-navy mb-2">Host Dashboard Preview</h2>
-          <p className="text-sm text-brand-text-secondary mb-6">
-            Phase 1 is complete! The Host Dashboard layout (sidebar, quick action cards, survey tabs, and workspace) is scheduled for implementation in Phase 2.
-          </p>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-navy text-white text-sm font-semibold rounded-xl hover:bg-brand-navy-light transition-colors"
-          >
-            Explore Landing Page
-          </Link>
-        </div>
+    <div className="min-h-screen bg-brand-light-gray flex">
+      {/* Sidebar (Desktop fixed & Mobile Drawer) */}
+      <DashboardSidebar
+        currentView={currentView}
+        onSelectView={(view) => {
+          setCurrentView(view);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
+      {/* Main Content Area (Offset by sidebar width on lg screens) */}
+      <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
+        {/* Top Bar with Search & Account */}
+        <DashboardTopNav
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onOpenSidebar={() => setSidebarOpen(true)}
+        />
+
+        {/* Dashboard Page Body */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-8">
+          {/* Main Dashboard / Surveys View */}
+          {(currentView === 'home' || currentView === 'surveys') && (
+            <>
+              {/* Welcome Section */}
+              <WelcomeBanner
+                totalSurveys={surveys.length}
+                activeSurveys={activeSurveysCount}
+              />
+
+              {/* Quick Actions (4 cards) */}
+              <div>
+                <div className="flex items-center justify-between mb-3.5">
+                  <h2 className="text-sm font-bold text-brand-navy uppercase tracking-wider">
+                    Quick Actions
+                  </h2>
+                </div>
+                <QuickActions
+                  onSelectTemplate={() => setCurrentView('templates')}
+                  onSelectLiveSession={() => {
+                    const firstActive = surveys.find(s => s.status === 'active') || surveys[0];
+                    setLaunchSurvey(firstActive);
+                  }}
+                  onSelectAnalytics={() => setCurrentView('analytics')}
+                />
+              </div>
+
+              {/* My Surveys Section */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-brand-navy">My Surveys</h2>
+                    <p className="text-xs text-brand-text-secondary mt-0.5">
+                      Manage, present, and inspect results for all audience surveys.
+                    </p>
+                  </div>
+                </div>
+
+                <SurveyList
+                  surveys={surveys}
+                  searchTerm={searchTerm}
+                  onSelectSurveyPreview={(survey) => setPreviewSurvey(survey)}
+                  onLaunchSession={(survey) => setLaunchSurvey(survey)}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Templates View */}
+          {currentView === 'templates' && (
+            <TemplatesView
+              onUseTemplate={(template) => {
+                // Future Phase 4 integration
+              }}
+            />
+          )}
+
+          {/* Analytics View */}
+          {currentView === 'analytics' && (
+            <AnalyticsView surveys={surveys} />
+          )}
+
+          {/* Profile View */}
+          {currentView === 'profile' && (
+            <ProfileView />
+          )}
+
+          {/* Settings View */}
+          {currentView === 'settings' && (
+            <SettingsView />
+          )}
+        </main>
       </div>
+
+      {/* Survey Preview Details Modal */}
+      {previewSurvey && (
+        <SurveyPreviewModal
+          survey={previewSurvey}
+          onClose={() => setPreviewSurvey(null)}
+          onLaunch={(survey) => {
+            setPreviewSurvey(null);
+            setLaunchSurvey(survey);
+          }}
+        />
+      )}
+
+      {/* Live Session Room Modal */}
+      {launchSurvey && (
+        <LaunchSessionModal
+          survey={launchSurvey}
+          onClose={() => setLaunchSurvey(null)}
+        />
+      )}
     </div>
   );
 }
