@@ -5,6 +5,7 @@ export { default as EmptyState } from './EmptyState';
 export { default as Input } from './Input';
 export { default as Modal } from './Modal';
 export { default as Skeleton, SkeletonGroup } from './Skeleton';
+export { default as StatusBadge } from './StatusBadge';
 export { default as Tabs } from './Tabs';
 export { default as Textarea } from './Textarea';
 export { default as Toast } from './Toast';

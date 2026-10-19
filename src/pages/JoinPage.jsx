@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
 import Logo from '../components/common/Logo';
-import { ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
+import { ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function JoinPage() {
   const [code, setCode] = useState('');
@@ -39,16 +39,10 @@ export default function JoinPage() {
             <Logo size="lg" />
           </div>
 
-          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-orange bg-amber-50 px-3 py-1 rounded-full border border-amber-200 mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Audience Fast-Join</span>
-          </div>
-
-          <h1 className="text-2xl font-bold text-brand-navy mb-2">
-            Join a Live Session
-          </h1>
-          <p className="text-sm text-brand-text-secondary mb-8">
-            Enter the 8-character code shown on the host screen.
+          <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-accent-strong">Audience join</p>
+          <h1 className="mb-2 text-2xl font-bold text-primary">Join a live session</h1>
+          <p className="mb-8 text-sm text-muted">
+            Enter the 8-character code on the host screen. You do not need an account.
           </p>
 
           <form onSubmit={handleJoin} className="space-y-4">
@@ -81,7 +75,7 @@ export default function JoinPage() {
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-brand-navy hover:bg-brand-navy-light text-white font-semibold text-base rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center gap-2"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3.5 text-base font-semibold text-white shadow-sm hover:bg-accent-strong"
             >
               <span>Enter Session</span>
               <ArrowRight className="w-4 h-4" />

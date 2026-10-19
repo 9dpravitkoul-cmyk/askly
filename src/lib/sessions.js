@@ -3,14 +3,19 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   runTransaction,
   serverTimestamp,
   setDoc,
   query,
   orderBy,
+  where,
 } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { auth, db } from './firebase';
+import { getJoinUrl } from './joinUrl';
+
+export { getJoinUrl, getAppOrigin, isUsingFallbackProductionOrigin } from './joinUrl';
 
 const SESSIONS = 'sessions';
 const LOOKUPS = 'sessionLookups';
@@ -226,6 +231,65 @@ export async function getPublicSessionByCode(inputCode) {
   };
 }
 
+export async function listHostSessions(uid) {
+  requireDatabase();
+  if (!uid) throw new Error('Sign in to view your sessions.');
+  const result = await getDocs(query(collection(db, SESSIONS), where('ownerUid', '==', uid)));
+  return result.docs
+    .map((snapshot) => ({ id: snapshot.id, ...snapshot.data() }))
+    .sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+}
+
+export function subscribeHostSession(sessionId, uid, onNext, onError) {
+  requireDatabase();
+  return onSnapshot(doc(db, SESSIONS, sessionId), (snapshot) => {
+    if (!snapshot.exists() || snapshot.data().ownerUid !== uid) {
+      onError?.(new Error('Session not found, or you do not have permission to manage it.'));
+      return;
+    }
+    onNext({ id: snapshot.id, ...snapshot.data() });
+  }, onError);
+}
+
+export function subscribeSessionVotes(sessionId, onNext, onError) {
+  requireDatabase();
+  return onSnapshot(query(collection(db, SESSIONS, sessionId, 'votes')), (snapshot) => {
+    onNext(snapshot.docs.map((voteDoc) => ({ id: voteDoc.id, ...voteDoc.data() })));
+  }, onError);
+}
+
+export function subscribePublicLookup(inputCode, onNext, onError) {
+  requireDatabase();
+  const code = String(inputCode || '').replace(/\s/g, '').toUpperCase();
+  if (!/^[A-HJ-NP-Z2-9]{8}$/.test(code)) {
+    onError?.(new Error('Enter a valid 8-character session code.'));
+    return () => {};
+  }
+  return onSnapshot(doc(db, LOOKUPS, code), (snapshot) => {
+    if (!snapshot.exists()) {
+      onError?.(new Error('No session was found for that code. Check it and try again.'));
+      return;
+    }
+    const data = snapshot.data();
+    onNext({
+      code,
+      sessionId: data.sessionId,
+      surveyId: data.surveyId,
+      surveyTitle: data.surveyTitle,
+      status: data.status,
+    });
+  }, onError);
+}
+
+export function uniqueParticipantCount(votes = []) {
+  return new Set(votes.map((vote) => vote.participantUid).filter(Boolean)).size;
+}
+
+/**
+ * Firestore vote rules require request.auth != null. Participants therefore sign in
+ * anonymously (no email/password). This is not optional without weakening security rules.
+ * Enable Anonymous in Firebase Console → Authentication → Sign-in method.
+ */
 export async function ensureParticipantAuth() {
   requireDatabase();
   if (!auth) throw new Error('Firebase Authentication is not configured.');

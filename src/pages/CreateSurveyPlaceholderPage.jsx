@@ -9,10 +9,26 @@ import { getSurvey, saveSurvey } from '../lib/surveys';
 import { startSession } from '../lib/sessions';
 
 const makeId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const newQuestion = (type = 'wordCloud') => ({
-  id: makeId(), type, text: '', maxLength: 25,
-  options: type === 'multipleChoice' ? [{ id: makeId(), label: 'Option 1' }, { id: makeId(), label: 'Option 2' }] : [],
-});
+const applyQuestionType = (question, type) => {
+  const text = typeof question?.text === 'string' ? question.text : '';
+  const id = question?.id || makeId();
+  if (type === 'wordCloud') {
+    return {
+      id,
+      type: 'wordCloud',
+      text,
+      maxLength: Number.isInteger(question?.maxLength) && question.maxLength >= 1 && question.maxLength <= 280 ? question.maxLength : 25,
+    };
+  }
+  const options = Array.isArray(question?.options) && question.options.length >= 2
+    ? question.options.map((option, optionIndex) => ({
+      id: typeof option?.id === 'string' && option.id ? option.id : makeId(),
+      label: typeof option?.label === 'string' ? option.label : `Option ${optionIndex + 1}`,
+    }))
+    : [{ id: makeId(), label: 'Option 1' }, { id: makeId(), label: 'Option 2' }];
+  return { id, type: 'multipleChoice', text, options };
+};
+const newQuestion = (type = 'wordCloud') => applyQuestionType({ id: makeId(), text: '' }, type);
 const friendlyError = (error) => {
   if (error.code === 'permission-denied') return 'Firestore denied this action. Check that the survey security rules are deployed and you are signed in to the owning account.';
   if (error.code === 'unavailable' || error.code === 'network-request-failed') return 'Could not reach Firebase. Check your connection and try again.';
@@ -147,6 +163,10 @@ export default function CreateSurveyPlaceholderPage() {
   const titleError = useMemo(() => !title.trim() ? 'Survey title is required.' : title.trim().length > 120 ? 'Title must be 120 characters or fewer.' : '', [title]);
   const validationErrors = useMemo(() => questions.map(validateQuestion).filter(Boolean), [questions]);
   const updateQuestion = (questionId, change) => { setDirty(true); setQuestions((current) => current.map((question) => question.id === questionId ? { ...question, ...change } : question)); };
+  const changeQuestionType = (questionId, type) => {
+    setDirty(true);
+    setQuestions((current) => current.map((question) => question.id === questionId ? applyQuestionType(question, type) : question));
+  };
 
   const handleSave = async (nextStatus = 'draft') => {
     setError(''); setNotice('');
@@ -223,7 +243,9 @@ export default function CreateSurveyPlaceholderPage() {
       <div className="flex items-center gap-3"><Link onClick={leaveEditor} to="/dashboard" className="p-2 rounded-lg hover:bg-brand-light-gray" aria-label="Back to dashboard"><ArrowLeft className="w-5 h-5" /></Link><Logo size="md" /><span className="hidden sm:block text-sm text-brand-text-secondary border-l pl-3">{id ? 'Edit survey' : 'New survey'}</span></div>
       <div className="flex flex-wrap justify-end gap-2"><button onClick={() => setPreview(true)} disabled={saving} className="px-3 py-2 border border-brand-border-gray rounded-lg text-sm flex items-center gap-2 disabled:opacity-50"><Eye className="w-4 h-4" /> Preview</button><button onClick={() => handleSave('draft')} disabled={saving} className="px-3 py-2 bg-brand-navy text-white rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{saving && !startingSession ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Draft</button><button onClick={handleStartLiveSession} disabled={saving || startingSession} className="px-3 py-2 bg-brand-orange text-white rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{startingSession ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}{startingSession ? 'Starting…' : 'Start Live Session'}</button></div>
     </header>
-    <main className="max-w-4xl mx-auto px-4 py-8 sm:py-10 space-y-6">
+    <main className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="space-y-6">
       <div><h1 className="text-2xl sm:text-3xl font-bold text-brand-navy">{id ? 'Edit your survey' : 'Create a survey'}</h1><p className="text-sm text-brand-text-secondary mt-1">Draft saves are private to your account. Publish marks the survey ready for a future live session.</p></div>
       {(error || notice) && <div role={error ? 'alert' : 'status'} className={`p-3 rounded-xl border text-sm ${error ? 'bg-red-50 border-red-200 text-red-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>{error || notice}</div>}
       <section className="space-y-4 rounded-card border border-border bg-white p-5 shadow-soft sm:p-7">
@@ -237,7 +259,7 @@ export default function CreateSurveyPlaceholderPage() {
         {questions.length >= 200 && <p className="text-sm text-amber-800">You’ve reached the 200-question limit for this survey.</p>}
         {questions.length === 0 && <div className="rounded-card border border-dashed border-border bg-white p-10 text-center"><p className="font-semibold text-brand-navy">Start with a question</p><p className="text-sm text-brand-text-secondary mt-1">Choose a question type to add your first prompt.</p><Button className="mt-5" onClick={() => setAddQuestionOpen(true)}><Plus className="h-4 w-4" />Add question</Button></div>}
         {questions.map((question, index) => <article key={question.id} className="space-y-4 rounded-card border border-border bg-white p-5 shadow-soft sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3"><div className="flex items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-lg bg-background text-xs font-bold text-primary">{index + 1}</span><Badge variant={question.type === 'wordCloud' ? 'accent' : 'primary'}>{question.type === 'wordCloud' ? 'Word Cloud' : 'Multiple Choice'}</Badge><select aria-label={`Question ${index + 1} type`} value={question.type} onChange={(event) => updateQuestion(question.id, event.target.value === 'wordCloud' ? { type: 'wordCloud' } : { type: 'multipleChoice', options: question.options?.length >= 2 ? question.options : [{ id: makeId(), label: 'Option 1' }, { id: makeId(), label: 'Option 2' }] })} className="min-h-9 rounded-lg border border-border bg-white px-2 text-xs text-muted"><option value="wordCloud">Change type: Word Cloud</option><option value="multipleChoice">Change type: Multiple Choice</option></select></div><div className="flex gap-1"><button title="Move up" aria-label="Move question up" disabled={!index} onClick={() => moveQuestion(index, -1)} className="rounded-lg p-2 text-muted hover:bg-background hover:text-primary disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button><button title="Move down" aria-label="Move question down" disabled={index === questions.length - 1} onClick={() => moveQuestion(index, 1)} className="rounded-lg p-2 text-muted hover:bg-background hover:text-primary disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button><button title="Duplicate question" aria-label="Duplicate question" onClick={() => { const copy = { ...question, id: makeId(), options: (question.options || []).map((option) => ({ ...option, id: makeId() })) }; setQuestions((current) => [...current.slice(0, index + 1), copy, ...current.slice(index + 1)]); setDirty(true); }} className="rounded-lg p-2 text-muted hover:bg-background hover:text-primary"><Copy className="h-4 w-4" /></button><button title="Delete question" aria-label="Delete question" onClick={() => setConfirmDeleteQuestion(question.id)} className="rounded-lg p-2 text-danger hover:bg-red-50"><Trash2 className="h-4 w-4" /></button></div></div>
+          <div className="flex flex-wrap items-start justify-between gap-3"><div className="flex items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-lg bg-background text-xs font-bold text-primary">{index + 1}</span><Badge variant={question.type === 'wordCloud' ? 'accent' : 'primary'}>{question.type === 'wordCloud' ? 'Word Cloud' : 'Multiple Choice'}</Badge><select aria-label={`Question ${index + 1} type`} value={question.type === 'multipleChoice' ? 'multipleChoice' : 'wordCloud'} onChange={(event) => changeQuestionType(question.id, event.target.value)} className="min-h-9 rounded-lg border border-border bg-white px-2 text-xs text-muted"><option value="wordCloud">Change type: Word Cloud</option><option value="multipleChoice">Change type: Multiple Choice</option></select></div><div className="flex gap-1"><button title="Move up" aria-label="Move question up" disabled={!index} onClick={() => moveQuestion(index, -1)} className="rounded-lg p-2 text-muted hover:bg-background hover:text-primary disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button><button title="Move down" aria-label="Move question down" disabled={index === questions.length - 1} onClick={() => moveQuestion(index, 1)} className="rounded-lg p-2 text-muted hover:bg-background hover:text-primary disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button><button title="Duplicate question" aria-label="Duplicate question" onClick={() => { const copy = { ...question, id: makeId(), options: (question.options || []).map((option) => ({ ...option, id: makeId() })) }; setQuestions((current) => [...current.slice(0, index + 1), copy, ...current.slice(index + 1)]); setDirty(true); }} className="rounded-lg p-2 text-muted hover:bg-background hover:text-primary"><Copy className="h-4 w-4" /></button><button title="Delete question" aria-label="Delete question" onClick={() => setConfirmDeleteQuestion(question.id)} className="rounded-lg p-2 text-danger hover:bg-red-50"><Trash2 className="h-4 w-4" /></button></div></div>
           <Input id={`question-${question.id}`} label="Question text" value={question.text} onChange={(event) => updateQuestion(question.id, { text: event.target.value })} maxLength={300} placeholder={question.type === 'wordCloud' ? 'Describe our college in one word.' : 'What did you think of the event?'} />
           {question.type === 'wordCloud' ? <div className="max-w-xs"><label htmlFor={`length-${question.id}`} className="block text-xs font-semibold text-brand-text-secondary mb-1.5">Maximum response length (1–280)</label><input id={`length-${question.id}`} type="number" min={1} max={280} value={question.maxLength} onChange={(event) => updateQuestion(question.id, { maxLength: event.target.value === '' ? '' : Number(event.target.value) })} className="w-full border border-brand-border-gray rounded-xl px-3.5 py-2.5" /></div> : <div className="space-y-2"><div className="flex justify-between"><h3 className="text-xs font-semibold text-brand-text-secondary">Answer options ({question.options.length}/20)</h3><button disabled={question.options.length >= 20} onClick={() => updateQuestion(question.id, { options: [...question.options, { id: makeId(), label: '' }] })} className="text-xs font-semibold text-brand-navy disabled:opacity-40">+ Add option</button></div>{question.options.map((option, optionIndex) => <div key={option.id} className="flex gap-2"><input aria-label={`Option ${optionIndex + 1}`} value={option.label} maxLength={120} onChange={(event) => updateQuestion(question.id, { options: question.options.map((item) => item.id === option.id ? { ...item, label: event.target.value } : item) })} placeholder={`Option ${optionIndex + 1}`} className="flex-1 border border-brand-border-gray rounded-lg px-3 py-2" /><button aria-label={`Move option ${optionIndex + 1} up`} disabled={optionIndex === 0} onClick={() => { const next = [...question.options]; [next[optionIndex - 1], next[optionIndex]] = [next[optionIndex], next[optionIndex - 1]]; updateQuestion(question.id, { options: next }); }} className="p-2 border border-brand-border-gray rounded-lg disabled:opacity-30"><ArrowUp className="w-4 h-4" /></button><button aria-label={`Move option ${optionIndex + 1} down`} disabled={optionIndex === question.options.length - 1} onClick={() => { const next = [...question.options]; [next[optionIndex + 1], next[optionIndex]] = [next[optionIndex], next[optionIndex + 1]]; updateQuestion(question.id, { options: next }); }} className="p-2 border border-brand-border-gray rounded-lg disabled:opacity-30"><ArrowDown className="w-4 h-4" /></button><button aria-label={`Remove option ${optionIndex + 1}`} disabled={question.options.length <= 2} onClick={() => updateQuestion(question.id, { options: question.options.filter((item) => item.id !== option.id) })} className="p-2 text-red-600 border border-brand-border-gray rounded-lg disabled:opacity-30"><X className="w-4 h-4" /></button></div>)}</div>}
           {validateQuestion(question, index) && <p className="text-xs text-amber-700">{validateQuestion(question, index)}</p>}
@@ -245,6 +267,30 @@ export default function CreateSurveyPlaceholderPage() {
         </article>)}
       </section>
       <footer className="sticky bottom-3 z-10 flex flex-col items-start justify-between gap-3 rounded-card border border-border bg-white/95 p-4 shadow-card backdrop-blur sm:flex-row sm:items-center sm:p-5"><p className="text-xs text-brand-text-secondary">{saving ? 'Saving…' : error ? 'Save failed' : dirty ? 'Unsaved changes' : 'Saved'} · Changes save privately to your account.</p><div className="flex w-full gap-2 sm:w-auto"><Button variant="secondary" onClick={() => handleSave('draft')} disabled={saving || Boolean(titleError)} className="flex-1 sm:flex-none">Save Draft</Button><Button onClick={() => handleSave('published')} disabled={saving || Boolean(titleError) || !questions.length || Boolean(validationErrors.length)} className="flex-1 sm:flex-none">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}Publish</Button></div></footer>
+    </div>
+    <aside className="hidden lg:block">
+      <div className="sticky top-24 rounded-card border border-border bg-white p-5 shadow-soft">
+        <p className="text-xs font-bold uppercase tracking-wider text-accent-strong">Participant preview</p>
+        <h2 className="mt-2 text-lg font-bold text-primary">{title || 'Untitled survey'}</h2>
+        <p className="mt-1 text-sm text-muted">{description || 'Description appears here.'}</p>
+        {questions[0] ? (
+          <div className="mt-5">
+            <p className="text-xs text-muted">Question 1 of {questions.length}</p>
+            <p className="mt-2 font-semibold text-primary">{questions[0].text || 'Your question will appear here'}</p>
+            {questions[0].type === 'wordCloud' ? (
+              <div className="mt-3 rounded-xl border border-dashed border-border px-3 py-8 text-center text-sm text-muted">Short answer field</div>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {(questions[0].options || []).filter((option) => option.label.trim()).map((option) => (
+                  <div key={option.id} className="rounded-xl border border-border px-3 py-2 text-sm">{option.label}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : <p className="mt-5 text-sm text-muted">Add a question to see how it will look on a phone.</p>}
+      </div>
+    </aside>
+    </div>
     </main>
     {preview && <AudiencePreview title={title} description={description} questions={questions} onClose={() => setPreview(false)} />}
     <Modal open={addQuestionOpen} onClose={() => setAddQuestionOpen(false)} title="How would you like to collect responses?" description="Choose a format to start building your survey." className="bg-background sm:!max-w-2xl">

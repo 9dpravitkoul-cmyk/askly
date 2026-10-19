@@ -29,6 +29,7 @@ export default function SignupPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading || googleLoading) return;
     setError('');
 
     const cleanName = name.trim();
@@ -65,6 +66,7 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignUp = async () => {
+    if (loading || googleLoading) return;
     setError('');
     try {
       setGoogleLoading(true);
@@ -252,7 +254,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading || googleLoading}
-              className="w-full mt-2 py-3 bg-brand-navy hover:bg-brand-navy-light text-white font-semibold text-sm rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? (
                 <>

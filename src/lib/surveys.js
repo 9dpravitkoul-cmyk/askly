@@ -130,6 +130,99 @@ export async function saveSurvey({ id, uid, title, description, status, question
   return surveyRef.id;
 }
 
+export async function duplicateSurvey(surveyId, uid) {
+  const survey = await getSurvey(surveyId, uid);
+  const questions = (survey.questions || []).map((question, index) => {
+    const id = globalThis.crypto?.randomUUID?.() || `question-${Date.now()}-${index}`;
+    if (question.type === 'multipleChoice') {
+      return {
+        id,
+        type: 'multipleChoice',
+        text: question.text,
+        options: (question.options || []).map((option, optionIndex) => ({
+          id: globalThis.crypto?.randomUUID?.() || `${id}-option-${optionIndex + 1}`,
+          label: option.label,
+        })),
+      };
+    }
+    return {
+      id,
+      type: 'wordCloud',
+      text: question.text,
+      maxLength: Number.isInteger(question.maxLength) ? question.maxLength : 25,
+    };
+  });
+  const copyTitle = `${survey.title} (copy)`.slice(0, 120);
+  return saveSurvey({
+    uid,
+    title: copyTitle,
+    description: typeof survey.description === 'string' ? survey.description : '',
+    status: 'draft',
+    questions,
+  });
+}
+
+export const SURVEY_TEMPLATES = [
+  {
+    id: 'lecture-check',
+    title: 'Lecture check-in',
+    category: 'Education',
+    description: 'A short mid-class pulse on clarity and remaining questions.',
+    questions: [
+      { type: 'multipleChoice', text: 'How clear was today’s main concept?', options: ['Very clear', 'Mostly clear', 'A bit foggy', 'I need a recap'] },
+      { type: 'wordCloud', text: 'What should we review before next class?', maxLength: 40 },
+    ],
+  },
+  {
+    id: 'session-icebreaker',
+    title: 'Session icebreaker',
+    category: 'Events',
+    description: 'Warm up a room in under a minute before the main talk.',
+    questions: [
+      { type: 'wordCloud', text: 'In one word, what brought you here today?', maxLength: 24 },
+      { type: 'multipleChoice', text: 'How are you feeling about this session?', options: ['Ready to go', 'Curious', 'Cautiously optimistic', 'Need coffee first'] },
+    ],
+  },
+  {
+    id: 'team-retro',
+    title: 'Team retrospective',
+    category: 'Workplace',
+    description: 'Anonymous sentiment on what helped and what blocked the last sprint.',
+    questions: [
+      { type: 'multipleChoice', text: 'How did this sprint feel overall?', options: ['Smooth', 'Uneven', 'Stretched', 'Blocked'] },
+      { type: 'wordCloud', text: 'What should we keep doing?', maxLength: 40 },
+      { type: 'wordCloud', text: 'What slowed us down?', maxLength: 40 },
+    ],
+  },
+];
+
+export async function createSurveyFromTemplate(templateId, uid) {
+  const template = SURVEY_TEMPLATES.find((item) => item.id === templateId);
+  if (!template) throw new Error('That template is no longer available.');
+  const questions = template.questions.map((question, index) => {
+    const id = globalThis.crypto?.randomUUID?.() || `question-${Date.now()}-${index}`;
+    if (question.type === 'multipleChoice') {
+      return {
+        id,
+        type: 'multipleChoice',
+        text: question.text,
+        options: question.options.map((label, optionIndex) => ({
+          id: `${id}-option-${optionIndex + 1}`,
+          label,
+        })),
+      };
+    }
+    return { id, type: 'wordCloud', text: question.text, maxLength: question.maxLength };
+  });
+  return saveSurvey({
+    uid,
+    title: template.title,
+    description: template.description,
+    status: 'draft',
+    questions,
+  });
+}
+
 export async function deleteSurvey(surveyId, uid) {
   requireDatabase();
   if (!uid) throw new Error('Sign in to delete a survey.');

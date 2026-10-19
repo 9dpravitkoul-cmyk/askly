@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Menu, QrCode, X } from 'lucide-react';
 import Logo from './Logo';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
-
+  const { user } = useAuth();
+  const signedIn = Boolean(user && !user.isAnonymous);
   const isHome = location.pathname === '/';
 
   const scrollToSection = (id) => {
@@ -15,126 +17,64 @@ export default function Navbar() {
       window.location.href = `/#${id}`;
       return;
     }
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-brand-border-gray">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <div className="flex-shrink-0 flex items-center">
-            <Logo size="md" />
-          </div>
+  const close = () => setMobileMenuOpen(false);
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center space-x-8 text-sm font-medium text-brand-text-secondary">
-            <button
-              onClick={() => scrollToSection('features')}
-              className="hover:text-brand-navy transition-colors focus:outline-none focus:text-brand-navy"
-            >
-              Features
-            </button>
-            <button
-              onClick={() => scrollToSection('how-it-works')}
-              className="hover:text-brand-navy transition-colors focus:outline-none focus:text-brand-navy"
-            >
-              How It Works
-            </button>
-            <button
-              onClick={() => scrollToSection('preview')}
-              className="hover:text-brand-navy transition-colors focus:outline-none focus:text-brand-navy"
-            >
-              Interactive Preview
-            </button>
-            <Link
-              to="/join"
-              className="text-brand-navy font-medium hover:text-brand-navy-light flex items-center gap-1 transition-colors"
-            >
-              <Sparkles className="w-4 h-4 text-brand-orange" />
-              Join a Session
+  return (
+    <header className="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur-sm">
+      <div className="page-shell">
+        <div className="flex h-16 items-center justify-between gap-4">
+          <Logo size="md" />
+          <nav className="hidden items-center gap-7 text-sm font-medium text-muted md:flex">
+            <button type="button" onClick={() => scrollToSection('features')} className="hover:text-primary">Features</button>
+            <button type="button" onClick={() => scrollToSection('how-it-works')} className="hover:text-primary">How it works</button>
+            <Link to="/join" className="inline-flex items-center gap-1.5 text-primary hover:text-primary-hover">
+              <QrCode className="h-4 w-4 text-accent-strong" />
+              Join a session
             </Link>
           </nav>
-
-          {/* Desktop Action Buttons */}
-          <div className="hidden md:flex items-center space-x-3">
-            <Link
-              to="/login"
-              className="px-4 py-2 text-sm font-semibold text-brand-navy hover:bg-brand-light-blue rounded-lg transition-colors border border-transparent hover:border-brand-border-gray"
-            >
-              Log In
-            </Link>
-            <Link
-              to="/surveys/new"
-              className="ui-interactive inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover"
-            >
-              Create a Survey
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+          <div className="hidden items-center gap-2 md:flex">
+            {signedIn ? (
+              <Link to="/dashboard" className="ui-interactive inline-flex min-h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover">
+                Open workspace
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" className="inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-semibold text-primary hover:bg-primary-soft">Log in</Link>
+                <Link to="/signup" className="ui-interactive inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-strong">
+                  Create a survey
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </>
+            )}
           </div>
-
-          {/* Mobile menu button */}
-          <div className="flex md:hidden items-center">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              type="button"
-              className="p-2 rounded-lg text-brand-text-secondary hover:text-brand-navy hover:bg-brand-light-gray focus:outline-none focus:ring-2 focus:ring-brand-navy"
-              aria-expanded={mobileMenuOpen}
-              aria-label="Toggle navigation menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            className="rounded-lg p-2 text-muted hover:bg-background hover:text-primary md:hidden"
+            aria-expanded={mobileMenuOpen}
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
       </div>
-
-      {/* Mobile Navigation Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-brand-border-gray bg-white px-4 pt-2 pb-6 space-y-3">
-          <button
-            onClick={() => scrollToSection('features')}
-            className="block w-full text-left px-3 py-2 text-base font-medium text-brand-text-primary hover:bg-brand-light-blue rounded-lg"
-          >
-            Features
-          </button>
-          <button
-            onClick={() => scrollToSection('how-it-works')}
-            className="block w-full text-left px-3 py-2 text-base font-medium text-brand-text-primary hover:bg-brand-light-blue rounded-lg"
-          >
-            How It Works
-          </button>
-          <button
-            onClick={() => scrollToSection('preview')}
-            className="block w-full text-left px-3 py-2 text-base font-medium text-brand-text-primary hover:bg-brand-light-blue rounded-lg"
-          >
-            Interactive Preview
-          </button>
-          <Link
-            to="/join"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block w-full text-left px-3 py-2 text-base font-medium text-brand-navy hover:bg-brand-light-blue rounded-lg flex items-center justify-between"
-          >
-            <span>Join a Session</span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-brand-orange/20 text-brand-orange">Fast Join</span>
-          </Link>
-          <div className="pt-4 border-t border-brand-border-gray flex flex-col gap-2">
-            <Link
-              to="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-2.5 text-sm font-semibold text-brand-navy border border-brand-border-gray hover:bg-brand-light-gray rounded-lg"
-            >
-              Log In
-            </Link>
-            <Link
-              to="/surveys/new"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full text-center py-2.5 text-sm font-semibold text-white bg-brand-navy hover:bg-brand-navy-light rounded-lg shadow-sm"
-            >
-              Create a Survey
-            </Link>
+        <div className="space-y-1 border-t border-border bg-white px-4 py-4 md:hidden">
+          <button type="button" onClick={() => scrollToSection('features')} className="block w-full rounded-lg px-3 py-2.5 text-left font-medium text-text hover:bg-background">Features</button>
+          <button type="button" onClick={() => scrollToSection('how-it-works')} className="block w-full rounded-lg px-3 py-2.5 text-left font-medium text-text hover:bg-background">How it works</button>
+          <Link to="/join" onClick={close} className="block rounded-lg px-3 py-2.5 font-medium text-primary hover:bg-background">Join a session</Link>
+          <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+            {signedIn ? (
+              <Link to="/dashboard" onClick={close} className="rounded-lg bg-primary py-2.5 text-center text-sm font-semibold text-white">Open workspace</Link>
+            ) : (
+              <>
+                <Link to="/login" onClick={close} className="rounded-lg border border-border py-2.5 text-center text-sm font-semibold text-primary">Log in</Link>
+                <Link to="/signup" onClick={close} className="rounded-lg bg-accent py-2.5 text-center text-sm font-semibold text-white">Create a survey</Link>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -4,30 +4,33 @@
 
 :root {
   color-scheme: light;
-  --color-primary: #193b70;
-  --color-primary-hover: #142e59;
-  --color-primary-dark: #142e59;
-  --color-primary-soft: #eef2f8;
-  --color-accent: #f59e0b;
-  --color-accent-strong: #925400;
-  --color-accent-hover: #764400;
+  /* Logo-complementary identity: cobalt ink, gallery paper, harvest orange */
+  --color-primary: #123a73;
+  --color-primary-hover: #0c2854;
+  --color-primary-dark: #0a2146;
+  --color-primary-soft: #e7eef8;
+  --color-accent: #e07a14;
+  --color-accent-strong: #c45f0a;
+  --color-accent-hover: #a34e08;
   --color-surface: #ffffff;
-  --color-background: #fafaf7;
-  --color-border: #e1e7f0;
-  --color-text: #17243b;
-  --color-muted: #52627a;
-  --color-success: #167447;
-  --color-warning: #8a4b08;
+  --color-background: #f6f3ec;
+  --color-border: #e4dfd3;
+  --color-text: #152238;
+  --color-muted: #5a6878;
+  --color-success: #0b7a56;
+  --color-warning: #9a4f08;
   --color-danger: #b42318;
-  --shadow-focus: 0 0 0 3px rgba(27, 58, 107, 0.18);
+  --color-live: #0b7a56;
+  --shadow-focus: 0 0 0 3px rgba(18, 58, 115, 0.18);
+  --font-sans: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
 }
 
 @layer base {
   html { scroll-behavior: smooth; }
 
   body {
-    @apply text-brand-text-primary bg-background font-sans;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    @apply text-brand-text-primary bg-background font-sans antialiased;
+    font-feature-settings: "ss01", "cv11";
   }
 
   button, input, textarea, select { font: inherit; }
@@ -45,6 +48,7 @@
   .ui-field { @apply min-h-11 w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-text placeholder:text-muted transition duration-150; }
   .ui-field:focus { outline: none; border-color: var(--color-primary); box-shadow: var(--shadow-focus); }
   .ui-field:disabled { @apply cursor-not-allowed bg-background opacity-70; }
+  .page-shell { @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -54,20 +58,5 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-/* Subtle Network Node Pattern for Backgrounds */
-.bg-network-pattern {
-  background-color: #ffffff;
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(24, 57, 108, 0.04) 0%, transparent 20%),
-    radial-gradient(circle at 85% 30%, rgba(243, 154, 36, 0.04) 0%, transparent 25%),
-    radial-gradient(circle at 50% 80%, rgba(24, 57, 108, 0.03) 0%, transparent 30%),
-    radial-gradient(#18396c 0.75px, transparent 0.75px);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px;
-}
-
-.bg-network-dots {
-  background-image: radial-gradient(rgba(24, 57, 108, 0.08) 1px, transparent 1px);
-  background-size: 20px 20px;
+  .ui-interactive:active { transform: none; }
 }

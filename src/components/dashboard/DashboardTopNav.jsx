@@ -169,17 +169,17 @@ export default function DashboardTopNav({
               Welcome to your host workspace. Here are quick tips for managing polls and presentations:
             </p>
             <div className="mt-4 space-y-2.5 text-xs text-brand-text-primary">
-              <div className="p-3 bg-brand-light-gray rounded-xl border border-brand-border-gray">
-                <span className="font-semibold text-brand-navy block mb-0.5">🚀 Launching a Session</span>
-                Click "Launch" on any active survey to start the host screen with live QR code and join PIN.
+              <div className="rounded-xl border border-border bg-background p-3">
+                <span className="mb-0.5 block font-semibold text-primary">Launching a session</span>
+                Use Launch on a survey with at least one saved question. The control room shows the join code and QR.
               </div>
-              <div className="p-3 bg-brand-light-gray rounded-xl border border-brand-border-gray">
-                <span className="font-semibold text-brand-navy block mb-0.5">📊 Live Word Clouds</span>
-                Word clouds dynamically group duplicate keywords and automatically scale based on submission volume.
+              <div className="rounded-xl border border-border bg-background p-3">
+                <span className="mb-0.5 block font-semibold text-primary">Live results</span>
+                Word clouds group matching phrases. Bar charts use actual vote counts from Firestore.
               </div>
-              <div className="p-3 bg-brand-light-gray rounded-xl border border-brand-border-gray">
-                <span className="font-semibold text-brand-navy block mb-0.5">🔒 Duplicate Prevention</span>
-                Each audience participant receives an isolated session token to prevent multiple votes on single questions.
+              <div className="rounded-xl border border-border bg-background p-3">
+                <span className="mb-0.5 block font-semibold text-primary">One vote per question</span>
+                Each participant gets an anonymous Firebase UID. A second vote on the same question is rejected.
               </div>
             </div>
             <button

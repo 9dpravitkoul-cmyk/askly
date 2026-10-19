@@ -27,6 +27,8 @@ export function getFriendlyAuthErrorMessage(errorCode) {
       return 'Domain not authorized in Firebase Console. Please add your domain (e.g. localhost) in Firebase Authentication > Settings > Authorized domains.';
     case 'auth/operation-not-allowed':
       return 'This sign-in provider is not enabled in your Firebase Console. Please enable Email/Password or Google under Authentication > Sign-in method.';
+    case 'auth/admin-restricted-operation':
+      return 'This sign-in method is disabled for the Firebase project. For audience joining, enable Anonymous under Authentication → Sign-in method.';
     case 'auth/network-request-failed':
       return 'Network connection error. Please check your internet connection and try again.';
     case 'auth/too-many-requests':
