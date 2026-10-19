@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, BarChart3, Loader2, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BarChart3, Loader2 } from 'lucide-react';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import Logo from '../components/common/Logo';
 import QuestionResults, { validVote } from '../components/results/QuestionResults';
@@ -18,24 +18,14 @@ export default function SessionResultsPage() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [votes, setVotes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [listening, setListening] = useState(false);
-  const [connected, setConnected] = useState(typeof navigator === 'undefined' || navigator.onLine);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    const online = () => setConnected(true);
-    const offline = () => setConnected(false);
-    window.addEventListener('online', online);
-    window.addEventListener('offline', offline);
-    return () => { window.removeEventListener('online', online); window.removeEventListener('offline', offline); };
-  }, []);
 
   useEffect(() => {
     let active = true;
     let stopSession;
     let stopVotes;
     async function load() {
-      setLoading(true); setError(''); setListening(false); setVotes([]); setQuestions([]); setQuestionIndex(0);
+      setLoading(true); setError(''); setVotes([]); setQuestions([]); setQuestionIndex(0);
       try {
         const hostSession = await getHostSession(id, user?.uid);
         if (!active) return;
@@ -49,11 +39,9 @@ export default function SessionResultsPage() {
         stopVotes = subscribeSessionVotes(id, (nextVotes) => {
           if (!active) return;
           setVotes(nextVotes);
-          setListening(true);
           setError('');
         }, (listenError) => {
           if (!active) return;
-          setListening(false);
           setError(listenError.code === 'permission-denied'
             ? 'You do not have access to these results. Confirm that you are signed in as the session owner.'
             : 'Live results disconnected. Check your connection and reload this page to reconnect.');
@@ -82,10 +70,6 @@ export default function SessionResultsPage() {
     );
   }
 
-  const connectionMessage = !connected ? 'You are offline. Results may be out of date.'
-    : listening ? (session.status === 'active' ? 'Live updates connected' : 'Session ended · showing final totals')
-      : error ? 'Live updates are unavailable.' : 'Connecting to live results…';
-
   return (
     <div className="min-h-screen bg-background">
       <header className="flex items-center justify-between gap-3 border-b border-border bg-white px-4 py-3 sm:px-8">
@@ -108,10 +92,6 @@ export default function SessionResultsPage() {
             <span className="font-bold tabular-nums text-primary">{validVotes.length}</span>
             <span className="text-muted">total responses</span>
           </div>
-        </div>
-        <div role="status" className={`mb-5 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm ${connected && listening ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
-          {connected && listening ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
-          {connectionMessage}
         </div>
         {error && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
         {questions.length ? (

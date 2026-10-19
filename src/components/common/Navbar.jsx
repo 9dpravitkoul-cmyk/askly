@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowRight, Menu, QrCode, X } from 'lucide-react';
+import { Menu, QrCode, X } from 'lucide-react';
 import Logo from './Logo';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -36,19 +36,9 @@ export default function Navbar() {
             </Link>
           </nav>
           <div className="hidden items-center gap-2 md:flex">
-            {signedIn ? (
-              <Link to="/dashboard" className="ui-interactive inline-flex min-h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover">
-                Open workspace
-              </Link>
-            ) : (
-              <>
-                <Link to="/login" className="inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-semibold text-primary hover:bg-primary-soft">Log in</Link>
-                <Link to="/signup" className="ui-interactive inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-strong">
-                  Create a survey
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </>
-            )}
+            {signedIn && <Link to="/dashboard" className="ui-interactive hidden min-h-10 items-center rounded-lg border border-border px-4 text-sm font-semibold text-primary hover:bg-primary-soft lg:inline-flex">Open workspace</Link>}
+            <Link to="/login" className="inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-semibold text-primary hover:bg-primary-soft">Log in</Link>
+            <Link to="/signup" className="ui-interactive inline-flex min-h-10 items-center rounded-lg bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-strong">Sign up</Link>
           </div>
           <button
             type="button"
@@ -67,14 +57,9 @@ export default function Navbar() {
           <button type="button" onClick={() => scrollToSection('how-it-works')} className="block w-full rounded-lg px-3 py-2.5 text-left font-medium text-text hover:bg-background">How it works</button>
           <Link to="/join" onClick={close} className="block rounded-lg px-3 py-2.5 font-medium text-primary hover:bg-background">Join a session</Link>
           <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-            {signedIn ? (
-              <Link to="/dashboard" onClick={close} className="rounded-lg bg-primary py-2.5 text-center text-sm font-semibold text-white">Open workspace</Link>
-            ) : (
-              <>
-                <Link to="/login" onClick={close} className="rounded-lg border border-border py-2.5 text-center text-sm font-semibold text-primary">Log in</Link>
-                <Link to="/signup" onClick={close} className="rounded-lg bg-accent py-2.5 text-center text-sm font-semibold text-white">Create a survey</Link>
-              </>
-            )}
+            {signedIn && <Link to="/dashboard" onClick={close} className="rounded-lg border border-border py-2.5 text-center text-sm font-semibold text-primary">Open workspace</Link>}
+            <Link to="/login" onClick={close} className="rounded-lg border border-border py-2.5 text-center text-sm font-semibold text-primary">Log in</Link>
+            <Link to="/signup" onClick={close} className="rounded-lg bg-accent py-2.5 text-center text-sm font-semibold text-white">Sign up</Link>
           </div>
         </div>
       )}

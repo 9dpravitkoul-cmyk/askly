@@ -154,7 +154,7 @@ export default function HostSessionPage() {
               <p className="mt-2 text-xs text-warning">QR and copy link use the production URL so phones never receive localhost.</p>
             )}
             <div className="mt-6 flex flex-wrap gap-4 border-t border-border pt-5 text-sm text-muted">
-              <span className="inline-flex items-center gap-2"><Users className="h-4 w-4" />{listening ? `${participantCount} ${participantCount === 1 ? 'participant' : 'participants'} with a submitted vote` : 'Connecting to vote data…'}</span>
+              {listening && <span className="inline-flex items-center gap-2"><Users className="h-4 w-4" />{participantCount} {participantCount === 1 ? 'participant' : 'participants'} with a submitted vote</span>}
               <span className="inline-flex items-center gap-2"><Radio className={`h-4 w-4 ${session.status === 'active' ? 'text-live' : 'text-slate-400'}`} />{session.status === 'active' ? 'Voting is open' : 'Voting is closed'}</span>
             </div>
           </div>

@@ -183,7 +183,7 @@ export default function CreateSurveyPlaceholderPage() {
     setSaving(true);
     try {
       const savedId = await saveSurvey({ id, uid: user.uid, title, description, status: nextStatus, questions });
-      setDirty(false); setStatus(nextStatus); setNotice(nextStatus === 'published' ? 'Survey marked ready to launch.' : 'Draft saved to Firestore.');
+      setDirty(false); setStatus(nextStatus); setNotice(nextStatus === 'published' ? 'Survey ready to launch.' : 'Survey saved.');
       if (!id) navigate(`/surveys/${savedId}/edit`, { replace: true });
     } catch (saveError) { setError(friendlyError(saveError)); }
     finally { setSaving(false); }
@@ -244,7 +244,6 @@ export default function CreateSurveyPlaceholderPage() {
       <div className="flex flex-wrap justify-end gap-2"><button onClick={() => setPreview(true)} disabled={saving} className="px-3 py-2 border border-brand-border-gray rounded-lg text-sm flex items-center gap-2 disabled:opacity-50"><Eye className="w-4 h-4" /> Preview</button><button onClick={() => handleSave('draft')} disabled={saving} className="px-3 py-2 bg-brand-navy text-white rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{saving && !startingSession ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Draft</button><button onClick={handleStartLiveSession} disabled={saving || startingSession} className="px-3 py-2 bg-brand-orange text-white rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{startingSession ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}{startingSession ? 'Starting…' : 'Start Live Session'}</button></div>
     </header>
     <main className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
     <div className="space-y-6">
       <div><h1 className="text-2xl sm:text-3xl font-bold text-brand-navy">{id ? 'Edit your survey' : 'Create a survey'}</h1><p className="text-sm text-brand-text-secondary mt-1">Draft saves are private to your account. Publish marks the survey ready for a future live session.</p></div>
       {(error || notice) && <div role={error ? 'alert' : 'status'} className={`p-3 rounded-xl border text-sm ${error ? 'bg-red-50 border-red-200 text-red-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>{error || notice}</div>}
@@ -267,29 +266,6 @@ export default function CreateSurveyPlaceholderPage() {
         </article>)}
       </section>
       <footer className="sticky bottom-3 z-10 flex flex-col items-start justify-between gap-3 rounded-card border border-border bg-white/95 p-4 shadow-card backdrop-blur sm:flex-row sm:items-center sm:p-5"><p className="text-xs text-brand-text-secondary">{saving ? 'Saving…' : error ? 'Save failed' : dirty ? 'Unsaved changes' : 'Saved'} · Changes save privately to your account.</p><div className="flex w-full gap-2 sm:w-auto"><Button variant="secondary" onClick={() => handleSave('draft')} disabled={saving || Boolean(titleError)} className="flex-1 sm:flex-none">Save Draft</Button><Button onClick={() => handleSave('published')} disabled={saving || Boolean(titleError) || !questions.length || Boolean(validationErrors.length)} className="flex-1 sm:flex-none">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}Publish</Button></div></footer>
-    </div>
-    <aside className="hidden lg:block">
-      <div className="sticky top-24 rounded-card border border-border bg-white p-5 shadow-soft">
-        <p className="text-xs font-bold uppercase tracking-wider text-accent-strong">Participant preview</p>
-        <h2 className="mt-2 text-lg font-bold text-primary">{title || 'Untitled survey'}</h2>
-        <p className="mt-1 text-sm text-muted">{description || 'Description appears here.'}</p>
-        {questions[0] ? (
-          <div className="mt-5">
-            <p className="text-xs text-muted">Question 1 of {questions.length}</p>
-            <p className="mt-2 font-semibold text-primary">{questions[0].text || 'Your question will appear here'}</p>
-            {questions[0].type === 'wordCloud' ? (
-              <div className="mt-3 rounded-xl border border-dashed border-border px-3 py-8 text-center text-sm text-muted">Short answer field</div>
-            ) : (
-              <div className="mt-3 space-y-2">
-                {(questions[0].options || []).filter((option) => option.label.trim()).map((option) => (
-                  <div key={option.id} className="rounded-xl border border-border px-3 py-2 text-sm">{option.label}</div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : <p className="mt-5 text-sm text-muted">Add a question to see how it will look on a phone.</p>}
-      </div>
-    </aside>
     </div>
     </main>
     {preview && <AudiencePreview title={title} description={description} questions={questions} onClose={() => setPreview(false)} />}
