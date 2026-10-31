@@ -1,31 +1,31 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { MessageCircle } from 'lucide-react';
 
 export default function Logo({ size = 'md', className = '', showLink = true }) {
-  // Dimension presets tailored to 1024x558 (~1.83:1) aspect ratio
   const sizeClasses = {
-    sm: 'h-8 max-w-[120px]',
-    md: 'h-10 max-w-[150px]',
-    lg: 'h-14 max-w-[210px]',
-    xl: 'h-20 max-w-[300px]'
+    sm: 'gap-1.5 text-xl',
+    md: 'gap-2 text-2xl',
+    lg: 'gap-2.5 text-3xl',
+    xl: 'gap-3 text-4xl',
   };
 
-  const imageElement = (
-    <img
-      src="/askly-logo.png"
-      alt="Askly — Smart Polling, Real Insights"
-      className={`${sizeClasses[size] || sizeClasses.md} object-contain transition-transform duration-200 hover:opacity-95 ${className}`}
-      loading="eager"
-    />
+  const wordmark = (
+    <span className={`inline-flex items-center font-extrabold leading-none tracking-[-0.06em] ${sizeClasses[size] || sizeClasses.md} ${className}`}>
+      <MessageCircle aria-hidden="true" className="h-[0.88em] w-[0.88em] shrink-0 text-primary" strokeWidth={2.5} />
+      <span className="text-text">ask<span className="text-primary">ly</span></span>
+    </span>
   );
 
-  if (!showLink) {
-    return imageElement;
-  }
+  if (!showLink) return wordmark;
 
   return (
-    <Link to="/" className="inline-flex items-center focus:outline-none focus:ring-2 focus:ring-brand-navy rounded-lg p-0.5" aria-label="Askly Home">
-      {imageElement}
+    <Link
+      to="/"
+      className="inline-flex items-center rounded-lg p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      aria-label="Askly home"
+    >
+      {wordmark}
     </Link>
   );
 }

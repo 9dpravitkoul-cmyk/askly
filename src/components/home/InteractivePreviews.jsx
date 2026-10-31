@@ -6,7 +6,7 @@ export default function InteractivePreviews() {
 
   // Mock Poll Data
   const initialPollVotes = [
-    { id: 1, label: 'Instant Realtime Sync', count: 42, color: 'bg-brand-navy' },
+    { id: 1, label: 'Live audience responses', count: 42, color: 'bg-brand-navy' },
     { id: 2, label: 'No Audience App Required', count: 36, color: 'bg-brand-orange' },
     { id: 3, label: 'Clean, Non-distracting UI', count: 28, color: 'bg-blue-600' },
     { id: 4, label: 'QR Code Auto-Join', count: 21, color: 'bg-slate-700' },
@@ -72,7 +72,7 @@ export default function InteractivePreviews() {
             Experience Results Before You Launch
           </h2>
           <p className="text-base sm:text-lg text-brand-text-secondary mt-3">
-            Test how Askly calculates percentages and scales word clouds in real time. (Demonstration preview uses client-side simulated data).
+            Explore how Askly summarizes poll responses and highlights popular words. (Demonstration preview uses client-side simulated data).
           </p>
         </div>
 

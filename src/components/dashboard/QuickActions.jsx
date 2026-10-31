@@ -1,37 +1,37 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Layers, BarChart3, ArrowRight } from 'lucide-react';
+import { Plus, Layers, BarChart3, ArrowRight, Sparkles } from 'lucide-react';
 
 export default function QuickActions({ onSelectTemplate, onSelectAnalytics }) {
   const actions = [
     {
       id: 'create',
       title: 'Create New Survey',
-      description: 'Start from scratch with custom Multiple Choice or Word Cloud questions.',
+      description: 'Start from scratch with interactive Multiple Choice polls or Dynamic Word Clouds.',
       icon: Plus,
       isPrimary: true,
       to: '/surveys/new',
-      badge: 'Start here',
+      badge: 'Quick start',
     },
     {
       id: 'template',
       title: 'Use Template',
-      description: 'Choose pre-built templates for lectures, icebreakers, or team reviews.',
+      description: 'Choose pre-built templates for lectures, icebreakers, workshops, or team all-hands.',
       icon: Layers,
       isPrimary: false,
       onClick: onSelectTemplate,
-      iconBg: 'bg-brand-light-blue text-brand-navy',
+      iconBg: 'bg-primary-soft text-primary',
       badge: 'Pre-made',
     },
     {
       id: 'analytics',
       title: 'View Analytics',
-      description: 'Inspect participant participation rates and historical poll trends.',
+      description: 'Inspect live audience response rates, question stats, and participation trends.',
       icon: BarChart3,
       isPrimary: false,
       onClick: onSelectAnalytics,
-      iconBg: 'bg-brand-light-blue text-brand-navy',
-      badge: 'Reports',
+      iconBg: 'bg-secondary/10 text-secondary',
+      badge: 'Insights',
     },
   ];
 
@@ -45,28 +45,29 @@ export default function QuickActions({ onSelectTemplate, onSelectAnalytics }) {
             <Link
               key={act.id}
               to={act.to}
-              className="group bg-brand-navy hover:bg-brand-navy-light text-white rounded-2xl p-5 border border-brand-navy shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+              className="group bg-gradient-to-br from-primary to-primary-hover text-white rounded-2xl p-6 border border-primary/20 shadow-soft hover:shadow-card transition-all flex flex-col justify-between active:scale-[0.99]"
             >
               <div>
-                <div className="flex items-center justify-between mb-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-brand-orange border border-white/15 group-hover:scale-105 transition-transform">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-white border border-white/20 group-hover:scale-105 transition-transform">
                     <Icon className="w-5 h-5" />
                   </div>
-                  <span className="text-[11px] font-semibold text-brand-orange bg-white/10 px-2 py-0.5 rounded border border-white/10">
-                    {act.badge}
+                  <span className="text-[11px] font-bold text-white bg-white/15 px-2.5 py-0.5 rounded-full border border-white/20 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    <span>{act.badge}</span>
                   </span>
                 </div>
-                <h3 className="text-base font-bold text-white mb-1">
+                <h3 className="text-base font-bold text-white mb-1.5">
                   {act.title}
                 </h3>
-                <p className="text-xs text-blue-100/80 leading-relaxed">
+                <p className="text-xs text-white/80 leading-relaxed">
                   {act.description}
                 </p>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-white/15 flex items-center justify-between text-xs font-semibold text-blue-100 group-hover:text-white">
-                <span>New Survey Editor</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              <div className="mt-6 pt-3.5 border-t border-white/15 flex items-center justify-between text-xs font-bold text-white">
+                <span>Open Survey Builder</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
           );
@@ -77,28 +78,28 @@ export default function QuickActions({ onSelectTemplate, onSelectAnalytics }) {
             key={act.id}
             onClick={act.onClick}
             type="button"
-            className="group text-left bg-white hover:bg-brand-light-gray/50 rounded-2xl p-5 border border-brand-border-gray hover:border-slate-300 shadow-xs hover:shadow-sm transition-all flex flex-col justify-between"
+            className="group text-left bg-surface hover:bg-surface-secondary/50 rounded-2xl p-6 border border-border hover:border-primary/40 shadow-soft hover:shadow-card transition-all flex flex-col justify-between active:scale-[0.99]"
           >
             <div>
-              <div className="flex items-center justify-between mb-3.5">
-                <div className={`w-10 h-10 rounded-xl ${act.iconBg} flex items-center justify-center border border-brand-border-gray group-hover:scale-105 transition-transform`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className={`w-10 h-10 rounded-xl ${act.iconBg} flex items-center justify-center border border-border group-hover:scale-105 transition-transform`}>
                   <Icon className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-medium text-brand-text-secondary bg-brand-light-gray px-2 py-0.5 rounded border border-brand-border-gray">
+                <span className="text-[11px] font-bold text-muted bg-surface-secondary px-2.5 py-0.5 rounded-full border border-border">
                   {act.badge}
                 </span>
               </div>
-              <h3 className="text-base font-bold text-brand-navy mb-1 group-hover:text-brand-navy-light transition-colors">
+              <h3 className="text-base font-bold text-text mb-1.5 group-hover:text-primary transition-colors">
                 {act.title}
               </h3>
-              <p className="text-xs text-brand-text-secondary leading-relaxed">
+              <p className="text-xs text-muted leading-relaxed">
                 {act.description}
               </p>
             </div>
 
-            <div className="mt-5 pt-3 border-t border-brand-border-gray flex items-center justify-between text-xs font-medium text-brand-navy">
-              <span>Explore</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform text-brand-text-secondary" />
+            <div className="mt-6 pt-3.5 border-t border-border flex items-center justify-between text-xs font-semibold text-text group-hover:text-primary transition-colors">
+              <span>Explore Section</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform text-muted group-hover:text-primary" />
             </div>
           </button>
         );

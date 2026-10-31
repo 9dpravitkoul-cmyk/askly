@@ -5,7 +5,7 @@ import Footer from '../components/common/Footer';
 import Logo from '../components/common/Logo';
 import { useAuth } from '../contexts/AuthContext';
 import { getFriendlyAuthErrorMessage } from '../lib/authErrors';
-import { ArrowRight, Lock, Mail, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, Lock, Mail, Eye, EyeOff, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -21,7 +21,6 @@ export default function LoginPage() {
 
   const from = location.state?.from?.pathname || '/dashboard';
 
-  // If already logged in, redirect to intended page
   useEffect(() => {
     if (user && !user.isAnonymous) {
       navigate(from, { replace: true });
@@ -73,47 +72,50 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-brand-light-gray">
+    <div className="min-h-screen flex flex-col bg-background text-text transition-colors duration-200">
       <Navbar />
-      <div className="flex-grow flex items-center justify-center px-4 py-14">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-white p-6 shadow-card sm:p-8">
+
+      <main className="flex-grow flex items-center justify-center px-4 py-14 sm:py-20">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-7 sm:p-9 shadow-card">
           <div className="flex justify-center mb-6">
             <Logo size="lg" />
           </div>
 
-          <h1 className="text-2xl font-bold text-center text-brand-navy mb-1">
-            Welcome back
-          </h1>
-          <p className="text-sm text-center text-brand-text-secondary mb-8 leading-relaxed">
-            Sign in to your Askly host account to manage live polls and survey insights.
-          </p>
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold tracking-tight text-text">
+              Welcome Back
+            </h1>
+            <p className="mt-1 text-sm text-muted">
+              Sign in to your host workspace to create polls and run live sessions.
+            </p>
+          </div>
 
           {!isConfigured && (
-            <div className="mb-6 p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800 flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-brand-orange flex-shrink-0 mt-0.5" />
+            <div className="mb-6 p-3.5 bg-amber-500/10 rounded-xl border border-amber-500/20 text-xs text-amber-700 dark:text-amber-400 flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold block mb-0.5">Firebase Setup Notice</span>
-                <span>To enable live sign-in, add your Firebase keys to <code className="bg-amber-100/70 px-1 py-0.5 rounded font-mono">.env.local</code>. (See walkthrough in chat).</span>
+                <span className="font-semibold block mb-0.5">Firebase Configuration Notice</span>
+                <span>To enable live sign-in, add your Firebase keys in <code className="bg-amber-500/10 px-1 py-0.5 rounded font-mono">.env.local</code>.</span>
               </div>
             </div>
           )}
 
           {error && (
-            <div className="mb-6 p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2.5 text-xs text-rose-700 animate-in fade-in">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div className="mb-5 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2.5 text-xs text-red-700 dark:text-red-400 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Continue with Google Button */}
+          {/* Continue with Google */}
           <button
             type="button"
             onClick={handleGoogleSignIn}
             disabled={googleLoading || loading}
-            className="w-full py-2.5 px-4 bg-white hover:bg-brand-light-gray text-brand-text-primary text-sm font-semibold rounded-xl border border-brand-border-gray shadow-xs hover:border-slate-300 transition-all flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed mb-5"
+            className="w-full py-2.5 px-4 bg-surface hover:bg-surface-secondary text-text text-sm font-semibold rounded-xl border border-border shadow-xs hover:border-primary/40 transition-all flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed mb-5 active:scale-[0.99]"
           >
             {googleLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin text-brand-navy" />
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
             ) : (
               <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -140,21 +142,21 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="relative mb-5">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-brand-border-gray" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-brand-text-secondary font-medium">Or continue with email</span>
+              <span className="bg-surface px-2.5 text-muted font-medium">Or continue with email</span>
             </div>
           </div>
 
-          {/* Email / Password Form */}
+          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="login-email" className="block text-xs font-semibold text-brand-navy mb-1.5">
+              <label htmlFor="login-email" className="block text-xs font-semibold text-text mb-1.5">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-brand-text-secondary absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Mail className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="login-email"
                   type="email"
@@ -164,7 +166,7 @@ export default function LoginPage() {
                     if (error) setError('');
                   }}
                   placeholder="host@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-brand-border-gray focus:outline-none focus:ring-2 focus:ring-brand-navy bg-white"
+                  className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-border bg-surface-secondary/50 text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   required
                 />
               </div>
@@ -172,18 +174,18 @@ export default function LoginPage() {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="login-password" className="text-xs font-semibold text-brand-navy">
+                <label htmlFor="login-password" className="text-xs font-semibold text-text">
                   Password
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="text-xs text-brand-navy hover:underline font-medium"
+                  className="text-xs text-primary hover:underline font-medium"
                 >
                   Forgot password?
                 </Link>
               </div>
               <div className="relative">
-                <Lock className="w-4 h-4 text-brand-text-secondary absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Lock className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
@@ -193,13 +195,13 @@ export default function LoginPage() {
                     if (error) setError('');
                   }}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-brand-border-gray focus:outline-none focus:ring-2 focus:ring-brand-navy bg-white"
+                  className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-border bg-surface-secondary/50 text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-text-secondary hover:text-brand-navy p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-text p-1"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -210,30 +212,31 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || googleLoading}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-white shadow-soft transition-all hover:bg-primary-hover active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-brand-orange" />
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
                   <span>Signing in...</span>
                 </>
               ) : (
                 <>
-                  <span>Sign In</span>
+                  <span>Sign In to Workspace</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-brand-border-gray text-center text-xs text-brand-text-secondary">
+          <div className="mt-6 pt-6 border-t border-border text-center text-xs text-muted">
             <span>Don't have a host account? </span>
-            <Link to="/signup" className="text-brand-navy font-semibold hover:underline">
+            <Link to="/signup" className="text-primary font-semibold hover:underline">
               Create an account
             </Link>
           </div>
         </div>
-      </div>
+      </main>
+
       <Footer />
     </div>
   );

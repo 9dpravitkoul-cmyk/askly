@@ -1,30 +1,85 @@
 import React from 'react';
-import { BarChart3, Cloud, QrCode, Radio } from 'lucide-react';
+import { BarChart3, Cloud, QrCode, Radio, ArrowUpRight, Zap } from 'lucide-react';
 
 const features = [
-  { icon: Radio, title: 'Live polls', description: 'Open a session and collect answers while you present. Status stays honest: live or ended.' },
-  { icon: Cloud, title: 'Word clouds', description: 'Short responses cluster by frequency so popular language stands out without unsafe HTML.' },
-  { icon: QrCode, title: 'QR joining', description: 'Share an 8-character code or a scannable link. Guests vote without creating an account.' },
-  { icon: BarChart3, title: 'Real-time insights', description: 'Host charts update from actual Firestore votes. Empty rooms stay empty until someone answers.' },
+  {
+    icon: Radio,
+    title: 'Live Interactive Polls',
+    badge: 'Instant Tally',
+    description: 'Launch multiple-choice questions live. Watch option distributions, vote counts, and percentages recalculate instantly.',
+    accentColor: 'text-primary',
+    bg: 'bg-primary/10',
+  },
+  {
+    icon: Cloud,
+    title: 'Dynamic Word Clouds',
+    badge: 'Live Scaling',
+    description: 'Collect free-text responses from your audience. Words automatically group by frequency and scale dynamically.',
+    accentColor: 'text-accent',
+    bg: 'bg-accent/10',
+  },
+  {
+    icon: QrCode,
+    title: 'Frictionless QR Joining',
+    badge: 'No App Needed',
+    description: 'Participants simply scan the high-resolution QR code on their phone or enter the 8-character PIN. No accounts required.',
+    accentColor: 'text-secondary',
+    bg: 'bg-secondary/10',
+  },
+  {
+    icon: Zap,
+    title: 'Clear Audience Insights',
+    badge: 'Sub-Second Sync',
+    description: 'Follow audience responses as they arrive, manage your session, and review the results when you finish.',
+    accentColor: 'text-emerald-500',
+    bg: 'bg-emerald-500/10',
+  },
 ];
 
 export default function Features() {
   return (
-    <section id="features" className="scroll-mt-20 border-y border-border bg-white py-16 sm:py-20">
+    <section id="features" className="scroll-mt-20 border-y border-border bg-surface py-16 sm:py-24 transition-colors duration-200">
       <div className="page-shell">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent-strong">What you can run</p>
-          <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-primary sm:text-4xl">Built for the moment the room goes quiet.</h2>
-          <p className="mt-3 text-base text-muted">Askly is a live polling room, not a survey dump. Create, share, collect, and show results in one pass.</p>
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-secondary px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary mb-3">
+            <span>Core Capabilities</span>
+          </div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-text sm:text-4xl">
+            Designed for Modern Presentations & Classes
+          </h2>
+          <p className="mt-3 text-base text-muted leading-relaxed">
+            Askly gives speakers, educators, and event organizers lightweight, reliable tools to keep every audience engaged from start to finish.
+          </p>
         </div>
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map(({ icon: Icon, title, description }) => (
-            <article key={title} className="rounded-card border border-border bg-background p-5">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-white text-primary shadow-soft">
-                <Icon className="h-5 w-5" />
+
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map(({ icon: Icon, title, badge, description, accentColor, bg }) => (
+            <article
+              key={title}
+              className="group flex flex-col justify-between rounded-card border border-border bg-surface p-6 shadow-soft transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-card"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`grid h-11 w-11 place-items-center rounded-xl ${bg} ${accentColor} shadow-2xs group-hover:scale-105 transition-transform`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <span className="text-[11px] font-semibold text-muted bg-surface-secondary px-2.5 py-0.5 rounded-md border border-border">
+                    {badge}
+                  </span>
+                </div>
+
+                <h3 className="text-base font-bold text-text group-hover:text-primary transition-colors">
+                  {title}
+                </h3>
+                <p className="mt-2 text-xs leading-relaxed text-muted">
+                  {description}
+                </p>
               </div>
-              <h3 className="mt-4 text-base font-bold text-primary">{title}</h3>
-              <p className="mt-2 text-sm leading-6 text-muted">{description}</p>
+
+              <div className="mt-6 flex items-center gap-1 text-xs font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                <span>Learn more</span>
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </div>
             </article>
           ))}
         </div>

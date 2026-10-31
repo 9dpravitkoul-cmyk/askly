@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -7,12 +8,25 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: 'var(--color-primary)',
-        'primary-hover': 'var(--color-primary-hover)',
-        'primary-soft': 'var(--color-primary-soft)',
-        accent: 'var(--color-accent)',
-        'accent-strong': 'var(--color-accent-strong)',
-        surface: 'var(--color-surface)',
+        primary: {
+          DEFAULT: 'var(--color-primary)',
+          hover: 'var(--color-primary-hover)',
+          dark: 'var(--color-primary-dark)',
+          soft: 'var(--color-primary-soft)',
+        },
+        secondary: {
+          DEFAULT: 'var(--color-secondary)',
+          hover: 'var(--color-secondary-hover)',
+        },
+        accent: {
+          DEFAULT: 'var(--color-accent)',
+          strong: 'var(--color-accent-strong)',
+          soft: 'var(--color-accent-soft)',
+        },
+        surface: {
+          DEFAULT: 'var(--color-surface)',
+          secondary: 'var(--color-surface-secondary)',
+        },
         background: 'var(--color-background)',
         border: 'var(--color-border)',
         text: 'var(--color-text)',
@@ -21,12 +35,14 @@ export default {
         warning: 'var(--color-warning)',
         danger: 'var(--color-danger)',
         live: 'var(--color-live)',
+
+        // Backward compatibility mappings
         brand: {
           navy: 'var(--color-primary)',
           'navy-dark': 'var(--color-primary-dark)',
           'navy-light': 'var(--color-primary-hover)',
           orange: 'var(--color-accent)',
-          'orange-hover': 'var(--color-accent-hover)',
+          'orange-hover': 'var(--color-accent-strong)',
           'light-blue': 'var(--color-primary-soft)',
           'light-gray': 'var(--color-background)',
           'border-gray': 'var(--color-border)',
@@ -38,10 +54,12 @@ export default {
         sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        soft: '0 8px 24px rgba(12, 40, 84, 0.06)',
-        card: '0 2px 8px rgba(12, 40, 84, 0.04), 0 12px 32px rgba(12, 40, 84, 0.05)',
+        soft: 'var(--shadow-soft)',
+        card: 'var(--shadow-card)',
       },
-      borderRadius: { card: '16px' },
+      borderRadius: {
+        card: '16px',
+      },
     },
   },
   plugins: [],

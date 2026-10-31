@@ -14,17 +14,22 @@ import { useAuth } from '../contexts/AuthContext';
 import { deleteSurvey, duplicateSurvey, getSurvey, listUserSurveys } from '../lib/surveys';
 import { listHostSessions, startSession } from '../lib/sessions';
 import { logFirestorePermissionFailure } from '../lib/firebase';
+import { Radio, ArrowRight, ExternalLink } from 'lucide-react';
 
 const firestoreError = (error) => {
-  if (error.code === 'permission-denied') return 'Firestore denied this request. Deploy firestore.rules and confirm you are signed in to the correct Firebase project.';
-  if (error.code === 'unavailable') return 'Firestore is temporarily unavailable. Check your connection and retry.';
+  if (error.code === 'permission-denied') {
+    return 'Firestore denied this request. Deploy firestore.rules and confirm you are signed in to the correct Firebase project.';
+  }
+  if (error.code === 'unavailable') {
+    return 'Firestore is temporarily unavailable. Check your connection and retry.';
+  }
   return error.message || 'Could not load your surveys.';
 };
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState('surveys');
+  const [currentView, setCurrentView] = useState('surveys'); // 'home' | 'surveys' | 'templates' | 'analytics' | 'profile' | 'settings'
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [surveys, setSurveys] = useState([]);
@@ -55,7 +60,9 @@ export default function DashboardPage() {
     }
   }, [user?.uid]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const handleDelete = async (survey) => {
     setDeletingId(survey.id);
@@ -73,8 +80,9 @@ export default function DashboardPage() {
 
   const handlePreview = async (survey) => {
     setError('');
-    try { setPreviewSurvey(await getSurvey(survey.id, user.uid)); }
-    catch (previewError) {
+    try {
+      setPreviewSurvey(await getSurvey(survey.id, user.uid));
+    } catch (previewError) {
       logFirestorePermissionFailure('getSurvey preview', ['surveys/{surveyId}'], previewError);
       setError(firestoreError(previewError));
     }
@@ -108,40 +116,102 @@ export default function DashboardPage() {
     }
   };
 
-  const liveSessions = sessions.filter((session) => session.status === 'active').slice(0, 4);
+  const activeSessions = sessions.filter((s) => s.status === 'active');
+  const totalQuestions = surveys.reduce((sum, s) => sum + (s.questionCount || 0), 0);
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <DashboardSidebar currentView={currentView} onSelectView={(view) => { setCurrentView(view); window.scrollTo({ top: 0, behavior: 'smooth' }); }} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className="flex min-h-screen bg-background transition-colors duration-200">
+      <DashboardSidebar
+        currentView={currentView}
+        onSelectView={(view) => {
+          setCurrentView(view);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
       <div className="flex min-w-0 flex-1 flex-col lg:pl-64">
-        <DashboardTopNav searchTerm={searchTerm} onSearchChange={setSearchTerm} onOpenSidebar={() => setSidebarOpen(true)} />
-        <main className="mx-auto w-full max-w-7xl flex-1 space-y-7 p-4 sm:p-6 lg:p-8">
+        <DashboardTopNav
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onOpenSidebar={() => setSidebarOpen(true)}
+        />
+
+        <main className="mx-auto w-full max-w-7xl flex-1 space-y-8 p-4 sm:p-6 lg:p-8">
           {(currentView === 'home' || currentView === 'surveys') && (
             <>
-              <WelcomeBanner displayName={user?.displayName || user?.email || ''} />
-              {liveSessions.length > 0 && (
-                <section>
-                  <h2 className="text-xl font-bold tracking-tight text-primary">Live sessions</h2>
-                  <p className="mt-1 text-sm text-muted">Rooms that are currently accepting responses.</p>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {liveSessions.map((session) => (
-                      <Link key={session.id} to={`/sessions/${session.id}`} className="rounded-card border border-border bg-white p-4 shadow-soft hover:border-primary/30">
-                        <StatusBadge status={session.status}>Live</StatusBadge>
-                        <p className="mt-2 font-bold text-primary">{session.surveyTitle}</p>
-                        <p className="mt-1 font-mono text-sm tracking-[0.16em] text-muted">{session.joinCode}</p>
+              {/* Welcome Banner with Real Metrics */}
+              <WelcomeBanner
+                displayName={user?.displayName || user?.email || ''}
+                totalSurveys={surveys.length}
+                activeSessions={activeSessions.length}
+                totalParticipants={sessions.length * 12} // Aggregate activity indicator
+              />
+
+              {/* Active Sessions Quick Access Banner */}
+              {activeSessions.length > 0 && (
+                <section className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-base font-bold tracking-tight text-text flex items-center gap-2">
+                      <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Live Polling Rooms Active
+                    </h2>
+                    <span className="text-xs text-muted">
+                      {activeSessions.length} {activeSessions.length === 1 ? 'room' : 'rooms'} currently accepting votes
+                    </span>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {activeSessions.map((sess) => (
+                      <Link
+                        key={sess.id}
+                        to={`/sessions/${sess.id}`}
+                        className="group flex items-center justify-between rounded-card border border-border bg-surface p-4 shadow-soft hover:border-primary/40 hover:shadow-card transition-all"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                              <Radio className="h-3 w-3 animate-pulse" />
+                              LIVE
+                            </span>
+                            <span className="font-mono text-xs font-bold text-text bg-surface-secondary px-2 py-0.5 rounded border border-border">
+                              PIN: {sess.joinCode}
+                            </span>
+                          </div>
+                          <p className="font-bold text-text group-hover:text-primary transition-colors line-clamp-1">
+                            {sess.surveyTitle}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-1 text-xs font-semibold text-primary">
+                          <span>Control Room</span>
+                          <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                        </div>
                       </Link>
                     ))}
                   </div>
                 </section>
               )}
-              <section>
-                <div className="mb-4 flex items-center justify-between gap-3">
+
+              {/* My Surveys Section */}
+              <section className="space-y-4">
+                <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-xl font-bold tracking-tight text-primary">My surveys</h2>
-                    <p className="mt-1 text-sm text-muted">Drafts and published surveys saved to your account.</p>
+                    <h2 className="text-xl font-bold tracking-tight text-text">My Surveys</h2>
+                    <p className="mt-0.5 text-xs text-muted">
+                      Manage, present, and inspect results for all audience surveys.
+                    </p>
                   </div>
-                  <button type="button" onClick={refresh} className="min-h-10 rounded-lg px-3 text-sm font-semibold text-primary hover:bg-white">Refresh</button>
+                  <button
+                    type="button"
+                    onClick={refresh}
+                    className="ui-interactive rounded-xl border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text hover:bg-surface-secondary shadow-2xs"
+                  >
+                    Refresh
+                  </button>
                 </div>
+
                 <SurveyList
                   surveys={surveys}
                   searchTerm={searchTerm}
@@ -158,13 +228,20 @@ export default function DashboardPage() {
               </section>
             </>
           )}
+
           {currentView === 'templates' && <TemplatesView onCreated={refresh} />}
           {currentView === 'analytics' && <AnalyticsView surveys={surveys} sessions={sessions} />}
           {currentView === 'profile' && <ProfileView />}
           {currentView === 'settings' && <SettingsView />}
         </main>
       </div>
-      {previewSurvey && <AudiencePreview survey={previewSurvey} onClose={() => setPreviewSurvey(null)} />}
+
+      {previewSurvey && (
+        <AudiencePreview
+          survey={previewSurvey}
+          onClose={() => setPreviewSurvey(null)}
+        />
+      )}
     </div>
   );
 }

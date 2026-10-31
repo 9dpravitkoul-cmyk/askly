@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, QrCode, X } from 'lucide-react';
+import { Menu, QrCode, X, ArrowRight, LayoutDashboard } from 'lucide-react';
 import Logo from './Logo';
+import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function Navbar() {
@@ -23,43 +24,144 @@ export default function Navbar() {
   const close = () => setMobileMenuOpen(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-white/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-md transition-colors duration-200">
       <div className="page-shell">
         <div className="flex h-16 items-center justify-between gap-4">
           <Logo size="md" />
+
+          {/* Desktop Navigation */}
           <nav className="hidden items-center gap-7 text-sm font-medium text-muted md:flex">
-            <button type="button" onClick={() => scrollToSection('features')} className="hover:text-primary">Features</button>
-            <button type="button" onClick={() => scrollToSection('how-it-works')} className="hover:text-primary">How it works</button>
-            <Link to="/join" className="inline-flex items-center gap-1.5 text-primary hover:text-primary-hover">
-              <QrCode className="h-4 w-4 text-accent-strong" />
-              Join a session
+            <button
+              type="button"
+              onClick={() => scrollToSection('features')}
+              className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5"
+            >
+              Features
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToSection('how-it-works')}
+              className="hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-0.5"
+            >
+              How It Works
+            </button>
+            <Link
+              to="/join"
+              className="inline-flex items-center gap-1.5 text-text hover:text-primary transition-colors font-medium"
+            >
+              <QrCode className="h-4 w-4 text-accent" />
+              Join a Session
             </Link>
           </nav>
-          <div className="hidden items-center gap-2 md:flex">
-            {signedIn && <Link to="/dashboard" className="ui-interactive hidden min-h-10 items-center rounded-lg border border-border px-4 text-sm font-semibold text-primary hover:bg-primary-soft lg:inline-flex">Open workspace</Link>}
-            <Link to="/login" className="inline-flex min-h-10 items-center rounded-lg px-3 text-sm font-semibold text-primary hover:bg-primary-soft">Log in</Link>
-            <Link to="/signup" className="ui-interactive inline-flex min-h-10 items-center rounded-lg bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-strong">Sign up</Link>
+
+          {/* Desktop Actions */}
+          <div className="hidden items-center gap-3 md:flex">
+            <ThemeToggle />
+
+            {signedIn ? (
+              <Link
+                to="/dashboard"
+                className="ui-interactive inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover shadow-sm"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Workspace
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="inline-flex min-h-10 items-center rounded-xl px-3 text-sm font-semibold text-text hover:bg-surface-secondary hover:text-primary transition-colors"
+                >
+                  Log In
+                </Link>
+                <Link
+                  to="/signup"
+                  className="ui-interactive inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover shadow-sm"
+                >
+                  Get Started
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((open) => !open)}
-            className="rounded-lg p-2 text-muted hover:bg-background hover:text-primary md:hidden"
-            aria-expanded={mobileMenuOpen}
-            aria-label="Toggle navigation menu"
-          >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+
+          {/* Mobile Right Bar: Theme Toggle + Menu Button */}
+          <div className="flex items-center gap-2 md:hidden">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              className="rounded-xl p-2 text-muted hover:bg-surface-secondary hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              aria-expanded={mobileMenuOpen}
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="space-y-1 border-t border-border bg-white px-4 py-4 md:hidden">
-          <button type="button" onClick={() => scrollToSection('features')} className="block w-full rounded-lg px-3 py-2.5 text-left font-medium text-text hover:bg-background">Features</button>
-          <button type="button" onClick={() => scrollToSection('how-it-works')} className="block w-full rounded-lg px-3 py-2.5 text-left font-medium text-text hover:bg-background">How it works</button>
-          <Link to="/join" onClick={close} className="block rounded-lg px-3 py-2.5 font-medium text-primary hover:bg-background">Join a session</Link>
-          <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-            {signedIn && <Link to="/dashboard" onClick={close} className="rounded-lg border border-border py-2.5 text-center text-sm font-semibold text-primary">Open workspace</Link>}
-            <Link to="/login" onClick={close} className="rounded-lg border border-border py-2.5 text-center text-sm font-semibold text-primary">Log in</Link>
-            <Link to="/signup" onClick={close} className="rounded-lg bg-accent py-2.5 text-center text-sm font-semibold text-white">Sign up</Link>
+        <div className="border-t border-border bg-surface px-4 py-4 md:hidden animate-in slide-in-from-top-2 duration-150">
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => scrollToSection('features')}
+              className="block w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-text hover:bg-surface-secondary"
+            >
+              Features
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToSection('how-it-works')}
+              className="block w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-text hover:bg-surface-secondary"
+            >
+              How It Works
+            </button>
+            <Link
+              to="/join"
+              onClick={close}
+              className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-primary hover:bg-surface-secondary"
+            >
+              <span className="flex items-center gap-2">
+                <QrCode className="h-4 w-4 text-accent" />
+                Join a Session
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-accent/15 text-accent px-2 py-0.5 rounded-full">
+                PIN / QR
+              </span>
+            </Link>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2 border-t border-border pt-4">
+            {signedIn ? (
+              <Link
+                to="/dashboard"
+                onClick={close}
+                className="flex items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-center text-sm font-semibold text-white shadow-sm"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Open Host Workspace
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  onClick={close}
+                  className="rounded-xl border border-border py-2.5 text-center text-sm font-semibold text-text hover:bg-surface-secondary"
+                >
+                  Log In
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={close}
+                  className="rounded-xl bg-primary py-2.5 text-center text-sm font-semibold text-white shadow-sm"
+                >
+                  Get Started Free
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

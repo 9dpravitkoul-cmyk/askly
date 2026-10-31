@@ -1,14 +1,36 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, BarChart3, Check, Cloud, Copy, Eye, Loader2, Plus, Radio, Save, Trash2, X } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  BarChart3,
+  Check,
+  Cloud,
+  Copy,
+  Eye,
+  Loader2,
+  Plus,
+  Radio,
+  Save,
+  Trash2,
+  X,
+  Sparkles,
+} from 'lucide-react';
 import Logo from '../components/common/Logo';
+import ThemeToggle from '../components/common/ThemeToggle';
 import SurveyTypeSelection from '../components/survey/SurveyTypeSelection';
+import AudiencePreview from '../components/survey/AudiencePreview';
 import { Badge, Button, Input, Modal, Textarea } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { getSurvey, saveSurvey } from '../lib/surveys';
 import { startSession } from '../lib/sessions';
 
-const makeId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const makeId = () =>
+  globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
 const applyQuestionType = (question, type) => {
   const text = typeof question?.text === 'string' ? question.text : '';
   const id = question?.id || makeId();
@@ -17,35 +39,62 @@ const applyQuestionType = (question, type) => {
       id,
       type: 'wordCloud',
       text,
-      maxLength: Number.isInteger(question?.maxLength) && question.maxLength >= 1 && question.maxLength <= 280 ? question.maxLength : 25,
+      maxLength:
+        Number.isInteger(question?.maxLength) && question.maxLength >= 1 && question.maxLength <= 280
+          ? question.maxLength
+          : 25,
     };
   }
-  const options = Array.isArray(question?.options) && question.options.length >= 2
-    ? question.options.map((option, optionIndex) => ({
-      id: typeof option?.id === 'string' && option.id ? option.id : makeId(),
-      label: typeof option?.label === 'string' ? option.label : `Option ${optionIndex + 1}`,
-    }))
-    : [{ id: makeId(), label: 'Option 1' }, { id: makeId(), label: 'Option 2' }];
+  const options =
+    Array.isArray(question?.options) && question.options.length >= 2
+      ? question.options.map((option, optionIndex) => ({
+          id: typeof option?.id === 'string' && option.id ? option.id : makeId(),
+          label: typeof option?.label === 'string' ? option.label : `Option ${optionIndex + 1}`,
+        }))
+      : [
+          { id: makeId(), label: 'Option 1' },
+          { id: makeId(), label: 'Option 2' },
+        ];
   return { id, type: 'multipleChoice', text, options };
 };
+
 const newQuestion = (type = 'wordCloud') => applyQuestionType({ id: makeId(), text: '' }, type);
+
 const friendlyError = (error) => {
-  if (error.code === 'permission-denied') return 'Firestore denied this action. Check that the survey security rules are deployed and you are signed in to the owning account.';
-  if (error.code === 'unavailable' || error.code === 'network-request-failed') return 'Could not reach Firebase. Check your connection and try again.';
-  return error.message || 'Could not load or save this survey. Please try again.';
+  if (error.code === 'permission-denied') {
+    return 'Firestore denied this action. Check that security rules are deployed and you are signed in.';
+  }
+  if (error.code === 'unavailable' || error.code === 'network-request-failed') {
+    return 'Could not reach Firebase. Check your connection and try again.';
+  }
+  return error.message || 'Could not save survey. Please try again.';
 };
 
 function validateQuestion(question, index) {
-  if (typeof question.text !== 'string' || !question.text.trim()) return `Question ${index + 1} needs question text.`;
+  if (typeof question.text !== 'string' || !question.text.trim()) {
+    return `Question ${index + 1} needs question text.`;
+  }
   if (question.type === 'wordCloud') {
-    if (!Number.isInteger(Number(question.maxLength)) || Number(question.maxLength) < 1 || Number(question.maxLength) > 280) {
+    if (
+      !Number.isInteger(Number(question.maxLength)) ||
+      Number(question.maxLength) < 1 ||
+      Number(question.maxLength) > 280
+    ) {
       return `Question ${index + 1}: response length must be between 1 and 280 characters.`;
     }
   } else {
-    const options = (Array.isArray(question.options) ? question.options : []).map((option) => typeof option?.label === 'string' ? option.label.trim() : '');
-    if (options.length < 2 || options.some((option) => !option)) return `Question ${index + 1} needs at least two non-empty options.`;
-    if (new Set(options.map((option) => option.toLocaleLowerCase())).size !== options.length) return `Question ${index + 1} has duplicate options.`;
-    if (options.length > 20) return `Question ${index + 1} can have at most 20 options.`;
+    const options = (Array.isArray(question.options) ? question.options : []).map((option) =>
+      typeof option?.label === 'string' ? option.label.trim() : ''
+    );
+    if (options.length < 2 || options.some((option) => !option)) {
+      return `Question ${index + 1} needs at least two non-empty options.`;
+    }
+    if (new Set(options.map((option) => option.toLocaleLowerCase())).size !== options.length) {
+      return `Question ${index + 1} has duplicate options.`;
+    }
+    if (options.length > 20) {
+      return `Question ${index + 1} can have at most 20 options.`;
+    }
   }
   return '';
 }
@@ -54,13 +103,15 @@ function normalizeQuestion(question, index) {
   const source = question && typeof question === 'object' ? question : {};
   const id = typeof source.id === 'string' && source.id ? source.id : `question-${index + 1}`;
   if (source.type === 'multipleChoice') {
-    const options = Array.isArray(source.options) ? source.options.map((option, optionIndex) => {
-      const legacyLabel = typeof option === 'string' ? option : '';
-      return {
-        id: typeof option?.id === 'string' && option.id ? option.id : `${id}-option-${optionIndex + 1}`,
-        label: typeof option?.label === 'string' ? option.label : legacyLabel,
-      };
-    }) : [];
+    const options = Array.isArray(source.options)
+      ? source.options.map((option, optionIndex) => {
+          const legacyLabel = typeof option === 'string' ? option : '';
+          return {
+            id: typeof option?.id === 'string' && option.id ? option.id : `${id}-option-${optionIndex + 1}`,
+            label: typeof option?.label === 'string' ? option.label : legacyLabel,
+          };
+        })
+      : [];
     return { ...source, id, text: typeof source.text === 'string' ? source.text : '', options };
   }
   return {
@@ -72,36 +123,14 @@ function normalizeQuestion(question, index) {
   };
 }
 
-function AudiencePreview({ title, description, questions, onClose }) {
-  const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const question = questions[index];
-  return (
-    <div className="fixed inset-0 z-50 bg-slate-900/50 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="preview-title">
-      <section className="bg-white rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl">
-        <div className="flex justify-between items-start gap-4">
-          <div><p className="text-xs font-semibold text-brand-orange">PREVIEW · responses are not saved</p><h2 id="preview-title" className="text-xl font-bold text-brand-navy mt-1">{title || 'Untitled survey'}</h2><p className="text-sm text-brand-text-secondary mt-1">{description}</p></div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-brand-light-gray" aria-label="Close preview"><X className="w-5 h-5" /></button>
-        </div>
-        <div className="mt-7">
-          {question ? <>
-            <p className="text-xs text-brand-text-secondary mb-2">Question {index + 1} of {questions.length}</p>
-            <h3 className="text-lg font-semibold text-brand-navy">{question.text || 'Your question will appear here'}</h3>
-            {question.type === 'wordCloud' ? <input aria-label="Preview answer" maxLength={Number(question.maxLength)} value={answers[question.id] || ''} onChange={(event) => setAnswers({ ...answers, [question.id]: event.target.value })} placeholder="Type your response" className="mt-4 w-full rounded-xl border border-brand-border-gray p-3 focus:ring-2 focus:ring-brand-navy" /> : <div className="mt-4 space-y-2">{question.options.filter((option) => option.label.trim()).map((option) => <label key={option.id} className="flex gap-3 items-center p-3 border border-brand-border-gray rounded-xl"><input type="radio" name={`preview-${question.id}`} checked={answers[question.id] === option.id} onChange={() => setAnswers({ ...answers, [question.id]: option.id })} />{option.label}</label>)}</div>}
-          </> : <p className="text-sm text-brand-text-secondary">Add at least one question to preview this survey.</p>}
-        </div>
-        <div className="mt-7 flex justify-between"><button disabled={index === 0} onClick={() => setIndex(index - 1)} className="px-4 py-2 border border-brand-border-gray rounded-lg disabled:opacity-40">Previous</button>{question && index < questions.length - 1 ? <button onClick={() => setIndex(index + 1)} className="px-4 py-2 bg-brand-navy text-white rounded-lg">Next question</button> : <button onClick={onClose} className="px-4 py-2 bg-brand-navy text-white rounded-lg">Done</button>}</div>
-      </section>
-    </div>
-  );
-}
-
 export default function CreateSurveyPlaceholderPage() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const requestedType = searchParams.get('type');
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [questions, setQuestions] = useState([]);
@@ -110,7 +139,6 @@ export default function CreateSurveyPlaceholderPage() {
   const [saving, setSaving] = useState(false);
   const [startingSession, setStartingSession] = useState(false);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
   const [preview, setPreview] = useState(false);
   const [dirty, setDirty] = useState(!id);
   const [confirmDeleteQuestion, setConfirmDeleteQuestion] = useState(null);
@@ -140,71 +168,138 @@ export default function CreateSurveyPlaceholderPage() {
     if (!id || !user?.uid) return undefined;
     let active = true;
     setLoading(true);
-    getSurvey(id, user.uid).then((survey) => {
-      if (!active) return;
-      setTitle(survey.title || '');
-      setDescription(survey.description || '');
-      setStatus(survey.status || 'draft');
-      setQuestions((survey.questions || []).map(normalizeQuestion));
-      setDirty(false);
-    }).catch((loadError) => {
-      if (active) setError(friendlyError(loadError));
-    }).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    getSurvey(id, user.uid)
+      .then((survey) => {
+        if (!active) return;
+        setTitle(survey.title || '');
+        setDescription(survey.description || '');
+        setStatus(survey.status || 'draft');
+        setQuestions((survey.questions || []).map(normalizeQuestion));
+        setDirty(false);
+      })
+      .catch((loadError) => {
+        if (active) setError(friendlyError(loadError));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [id, user?.uid]);
 
   useEffect(() => {
     if (!dirty || saving) return undefined;
-    const beforeUnload = (event) => { event.preventDefault(); event.returnValue = ''; };
+    const beforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
     window.addEventListener('beforeunload', beforeUnload);
     return () => window.removeEventListener('beforeunload', beforeUnload);
   }, [dirty, saving]);
 
-  const titleError = useMemo(() => !title.trim() ? 'Survey title is required.' : title.trim().length > 120 ? 'Title must be 120 characters or fewer.' : '', [title]);
-  const validationErrors = useMemo(() => questions.map(validateQuestion).filter(Boolean), [questions]);
-  const updateQuestion = (questionId, change) => { setDirty(true); setQuestions((current) => current.map((question) => question.id === questionId ? { ...question, ...change } : question)); };
+  const titleError = useMemo(
+    () =>
+      !title.trim()
+        ? 'Survey title is required.'
+        : title.trim().length > 120
+        ? 'Title must be 120 characters or fewer.'
+        : '',
+    [title]
+  );
+
+  const validationErrors = useMemo(
+    () => questions.map(validateQuestion).filter(Boolean),
+    [questions]
+  );
+
+  const updateQuestion = (questionId, change) => {
+    setDirty(true);
+    setQuestions((current) =>
+      current.map((q) => (q.id === questionId ? { ...q, ...change } : q))
+    );
+  };
+
   const changeQuestionType = (questionId, type) => {
     setDirty(true);
-    setQuestions((current) => current.map((question) => question.id === questionId ? applyQuestionType(question, type) : question));
+    setQuestions((current) =>
+      current.map((q) => (q.id === questionId ? applyQuestionType(q, type) : q))
+    );
   };
 
   const handleSave = async (nextStatus = 'draft') => {
-    setError(''); setNotice('');
+    setError('');
     if (saving) return;
-    if (titleError) { setError(titleError); return; }
+    if (titleError) {
+      setError(titleError);
+      return;
+    }
     if (validationErrors.length) {
       setError(validationErrors[0]);
       return;
     }
     if (nextStatus === 'published' && !questions.length) {
-      setError(validationErrors[0] || 'Add and complete at least one question before publishing.');
+      setError('Add and complete at least one question before publishing.');
       return;
     }
+
     setSaving(true);
     try {
-      const savedId = await saveSurvey({ id, uid: user.uid, title, description, status: nextStatus, questions });
-      setDirty(false); setStatus(nextStatus); setNotice(nextStatus === 'published' ? 'Survey ready to launch.' : 'Survey saved.');
+      const savedId = await saveSurvey({
+        id,
+        uid: user.uid,
+        title,
+        description,
+        status: nextStatus,
+        questions,
+      });
+      setDirty(false);
+      setStatus(nextStatus);
+      toast.success(nextStatus === 'published' ? 'Survey published!' : 'Draft saved.');
       if (!id) navigate(`/surveys/${savedId}/edit`, { replace: true });
-    } catch (saveError) { setError(friendlyError(saveError)); }
-    finally { setSaving(false); }
+    } catch (saveError) {
+      setError(friendlyError(saveError));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleStartLiveSession = async () => {
     if (startLock.current || saving) return;
-    setError(''); setNotice('');
-    if (titleError) { setError(titleError); return; }
-    if (!questions.length) { setError('Add at least one question before starting a live session.'); return; }
-    if (validationErrors.length) { setError(validationErrors[0]); return; }
-    if (!user?.uid) { setError('Sign in again before starting a live session.'); return; }
+    setError('');
+    if (titleError) {
+      setError(titleError);
+      return;
+    }
+    if (!questions.length) {
+      setError('Add at least one question before starting a live session.');
+      return;
+    }
+    if (validationErrors.length) {
+      setError(validationErrors[0]);
+      return;
+    }
+    if (!user?.uid) {
+      setError('Please sign in before starting a live session.');
+      return;
+    }
 
     startLock.current = true;
     setStartingSession(true);
     setSaving(true);
     try {
-      const savedId = await saveSurvey({ id, uid: user.uid, title, description, status, questions });
+      const savedId = await saveSurvey({
+        id,
+        uid: user.uid,
+        title,
+        description,
+        status,
+        questions,
+      });
       setDirty(false);
       if (!id) navigate(`/surveys/${savedId}/edit`, { replace: true });
       const session = await startSession(savedId, user.uid);
+      toast.success('Live room created!');
       navigate(`/sessions/${session.id}`);
     } catch (startError) {
       setError(friendlyError(startError));
@@ -216,13 +311,20 @@ export default function CreateSurveyPlaceholderPage() {
   };
 
   const leaveEditor = (event) => {
-    if (dirty && !window.confirm('You have unsaved changes. Leave without saving?')) event.preventDefault();
+    if (dirty && !window.confirm('You have unsaved changes. Leave without saving?')) {
+      event.preventDefault();
+    }
   };
+
   const moveQuestion = (index, offset) => {
     const target = index + offset;
     if (target < 0 || target >= questions.length) return;
     setDirty(true);
-    setQuestions((current) => { const next = [...current]; [next[index], next[target]] = [next[target], next[index]]; return next; });
+    setQuestions((current) => {
+      const next = [...current];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
   };
 
   const addQuestion = (type) => {
@@ -234,46 +336,507 @@ export default function CreateSurveyPlaceholderPage() {
     setAddQuestionOpen(false);
   };
 
-  if (!id && !['wordCloud', 'multipleChoice'].includes(requestedType)) return <SurveyTypeSelection />;
+  if (!id && !['wordCloud', 'multipleChoice'].includes(requestedType)) {
+    return <SurveyTypeSelection />;
+  }
 
-  if (loading) return <div className="min-h-screen grid place-items-center text-brand-navy"><Loader2 className="animate-spin" /> Loading survey…</div>;
-
-  return <div className="min-h-screen bg-brand-light-gray">
-    <header className="sticky top-0 z-20 bg-white border-b border-brand-border-gray px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
-      <div className="flex items-center gap-3"><Link onClick={leaveEditor} to="/dashboard" className="p-2 rounded-lg hover:bg-brand-light-gray" aria-label="Back to dashboard"><ArrowLeft className="w-5 h-5" /></Link><Logo size="md" /><span className="hidden sm:block text-sm text-brand-text-secondary border-l pl-3">{id ? 'Edit survey' : 'New survey'}</span></div>
-      <div className="flex flex-wrap justify-end gap-2"><button onClick={() => setPreview(true)} disabled={saving} className="px-3 py-2 border border-brand-border-gray rounded-lg text-sm flex items-center gap-2 disabled:opacity-50"><Eye className="w-4 h-4" /> Preview</button><button onClick={() => handleSave('draft')} disabled={saving} className="px-3 py-2 bg-brand-navy text-white rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{saving && !startingSession ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Draft</button><button onClick={handleStartLiveSession} disabled={saving || startingSession} className="px-3 py-2 bg-brand-orange text-white rounded-lg text-sm font-semibold flex items-center gap-2 disabled:opacity-60">{startingSession ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radio className="w-4 h-4" />}{startingSession ? 'Starting…' : 'Start Live Session'}</button></div>
-    </header>
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
-    <div className="space-y-6">
-      <div><h1 className="text-2xl sm:text-3xl font-bold text-brand-navy">{id ? 'Edit your survey' : 'Create a survey'}</h1><p className="text-sm text-brand-text-secondary mt-1">Draft saves are private to your account. Publish marks the survey ready for a future live session.</p></div>
-      {(error || notice) && <div role={error ? 'alert' : 'status'} className={`p-3 rounded-xl border text-sm ${error ? 'bg-red-50 border-red-200 text-red-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'}`}>{error || notice}</div>}
-      <section className="space-y-4 rounded-card border border-border bg-white p-5 shadow-soft sm:p-7">
-        <div className="flex items-center justify-between"><h2 className="font-bold text-brand-navy">Survey details</h2><Badge variant={status === 'published' ? 'success' : 'neutral'}>{status === 'published' ? 'Published' : 'Draft'}</Badge></div>
-        <Input id="survey-title" label={<>Title <span className="text-accent-strong">*</span></>} maxLength={120} value={title} onChange={(event) => { setTitle(event.target.value); setDirty(true); }} placeholder="e.g. Campus event feedback" />
-        <Textarea id="survey-description" label={<>Description <span className="font-normal text-muted">(optional)</span></>} maxLength={500} value={description} onChange={(event) => { setDescription(event.target.value); setDirty(true); }} rows={3} placeholder="Tell participants what this survey is about" />
-      </section>
-
-      <section className="space-y-4">
-        <div className="flex items-center justify-between"><div><h2 className="font-bold text-brand-navy">Questions <span className="text-brand-text-secondary font-normal">({questions.length})</span></h2><p className="text-xs text-brand-text-secondary mt-1">Up to 200 questions per survey.</p></div><Button onClick={() => setAddQuestionOpen(true)} disabled={questions.length >= 200}><Plus className="h-4 w-4" />Add question</Button></div>
-        {questions.length >= 200 && <p className="text-sm text-amber-800">You’ve reached the 200-question limit for this survey.</p>}
-        {questions.length === 0 && <div className="rounded-card border border-dashed border-border bg-white p-10 text-center"><p className="font-semibold text-brand-navy">Start with a question</p><p className="text-sm text-brand-text-secondary mt-1">Choose a question type to add your first prompt.</p><Button className="mt-5" onClick={() => setAddQuestionOpen(true)}><Plus className="h-4 w-4" />Add question</Button></div>}
-        {questions.map((question, index) => <article key={question.id} className="space-y-4 rounded-card border border-border bg-white p-5 shadow-soft sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3"><div className="flex items-center gap-2"><span className="grid h-7 w-7 place-items-center rounded-lg bg-background text-xs font-bold text-primary">{index + 1}</span><Badge variant={question.type === 'wordCloud' ? 'accent' : 'primary'}>{question.type === 'wordCloud' ? 'Word Cloud' : 'Multiple Choice'}</Badge><select aria-label={`Question ${index + 1} type`} value={question.type === 'multipleChoice' ? 'multipleChoice' : 'wordCloud'} onChange={(event) => changeQuestionType(question.id, event.target.value)} className="min-h-9 rounded-lg border border-border bg-white px-2 text-xs text-muted"><option value="wordCloud">Change type: Word Cloud</option><option value="multipleChoice">Change type: Multiple Choice</option></select></div><div className="flex gap-1"><button title="Move up" aria-label="Move question up" disabled={!index} onClick={() => moveQuestion(index, -1)} className="rounded-lg p-2 text-muted hover:bg-background hover:text-primary disabled:opacity-30"><ArrowUp className="h-4 w-4" /></button><button title="Move down" aria-label="Move question down" disabled={index === questions.length - 1} onClick={() => moveQuestion(index, 1)} className="rounded-lg p-2 text-muted hover:bg-background hover:text-primary disabled:opacity-30"><ArrowDown className="h-4 w-4" /></button><button title="Duplicate question" aria-label="Duplicate question" onClick={() => { const copy = { ...question, id: makeId(), options: (question.options || []).map((option) => ({ ...option, id: makeId() })) }; setQuestions((current) => [...current.slice(0, index + 1), copy, ...current.slice(index + 1)]); setDirty(true); }} className="rounded-lg p-2 text-muted hover:bg-background hover:text-primary"><Copy className="h-4 w-4" /></button><button title="Delete question" aria-label="Delete question" onClick={() => setConfirmDeleteQuestion(question.id)} className="rounded-lg p-2 text-danger hover:bg-red-50"><Trash2 className="h-4 w-4" /></button></div></div>
-          <Input id={`question-${question.id}`} label="Question text" value={question.text} onChange={(event) => updateQuestion(question.id, { text: event.target.value })} maxLength={300} placeholder={question.type === 'wordCloud' ? 'Describe our college in one word.' : 'What did you think of the event?'} />
-          {question.type === 'wordCloud' ? <div className="max-w-xs"><label htmlFor={`length-${question.id}`} className="block text-xs font-semibold text-brand-text-secondary mb-1.5">Maximum response length (1–280)</label><input id={`length-${question.id}`} type="number" min={1} max={280} value={question.maxLength} onChange={(event) => updateQuestion(question.id, { maxLength: event.target.value === '' ? '' : Number(event.target.value) })} className="w-full border border-brand-border-gray rounded-xl px-3.5 py-2.5" /></div> : <div className="space-y-2"><div className="flex justify-between"><h3 className="text-xs font-semibold text-brand-text-secondary">Answer options ({question.options.length}/20)</h3><button disabled={question.options.length >= 20} onClick={() => updateQuestion(question.id, { options: [...question.options, { id: makeId(), label: '' }] })} className="text-xs font-semibold text-brand-navy disabled:opacity-40">+ Add option</button></div>{question.options.map((option, optionIndex) => <div key={option.id} className="flex gap-2"><input aria-label={`Option ${optionIndex + 1}`} value={option.label} maxLength={120} onChange={(event) => updateQuestion(question.id, { options: question.options.map((item) => item.id === option.id ? { ...item, label: event.target.value } : item) })} placeholder={`Option ${optionIndex + 1}`} className="flex-1 border border-brand-border-gray rounded-lg px-3 py-2" /><button aria-label={`Move option ${optionIndex + 1} up`} disabled={optionIndex === 0} onClick={() => { const next = [...question.options]; [next[optionIndex - 1], next[optionIndex]] = [next[optionIndex], next[optionIndex - 1]]; updateQuestion(question.id, { options: next }); }} className="p-2 border border-brand-border-gray rounded-lg disabled:opacity-30"><ArrowUp className="w-4 h-4" /></button><button aria-label={`Move option ${optionIndex + 1} down`} disabled={optionIndex === question.options.length - 1} onClick={() => { const next = [...question.options]; [next[optionIndex + 1], next[optionIndex]] = [next[optionIndex], next[optionIndex + 1]]; updateQuestion(question.id, { options: next }); }} className="p-2 border border-brand-border-gray rounded-lg disabled:opacity-30"><ArrowDown className="w-4 h-4" /></button><button aria-label={`Remove option ${optionIndex + 1}`} disabled={question.options.length <= 2} onClick={() => updateQuestion(question.id, { options: question.options.filter((item) => item.id !== option.id) })} className="p-2 text-red-600 border border-brand-border-gray rounded-lg disabled:opacity-30"><X className="w-4 h-4" /></button></div>)}</div>}
-          {validateQuestion(question, index) && <p className="text-xs text-amber-700">{validateQuestion(question, index)}</p>}
-          {confirmDeleteQuestion === question.id && <div className="bg-red-50 border border-red-200 p-3 rounded-xl flex items-center justify-between gap-3"><span className="text-sm text-red-800">Delete this question?</span><div className="flex gap-2"><button onClick={() => setConfirmDeleteQuestion(null)} className="px-3 py-1.5 text-xs border border-red-200 rounded-lg">Cancel</button><button onClick={() => { setQuestions((current) => current.filter((item) => item.id !== question.id)); setConfirmDeleteQuestion(null); setDirty(true); }} className="px-3 py-1.5 text-xs bg-red-700 text-white rounded-lg">Delete question</button></div></div>}
-        </article>)}
-      </section>
-      <footer className="sticky bottom-3 z-10 flex flex-col items-start justify-between gap-3 rounded-card border border-border bg-white/95 p-4 shadow-card backdrop-blur sm:flex-row sm:items-center sm:p-5"><p className="text-xs text-brand-text-secondary">{saving ? 'Saving…' : error ? 'Save failed' : dirty ? 'Unsaved changes' : 'Saved'} · Changes save privately to your account.</p><div className="flex w-full gap-2 sm:w-auto"><Button variant="secondary" onClick={() => handleSave('draft')} disabled={saving || Boolean(titleError)} className="flex-1 sm:flex-none">Save Draft</Button><Button onClick={() => handleSave('published')} disabled={saving || Boolean(titleError) || !questions.length || Boolean(validationErrors.length)} className="flex-1 sm:flex-none">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}Publish</Button></div></footer>
-    </div>
-    </main>
-    {preview && <AudiencePreview title={title} description={description} questions={questions} onClose={() => setPreview(false)} />}
-    <Modal open={addQuestionOpen} onClose={() => setAddQuestionOpen(false)} title="How would you like to collect responses?" description="Choose a format to start building your survey." className="bg-background sm:!max-w-2xl">
-      <div className="grid items-stretch gap-4 sm:grid-cols-2">
-        <button type="button" onClick={() => addQuestion('wordCloud')} className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-white p-4 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-accent hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><span className="absolute inset-x-0 top-0 h-1 bg-accent" /><span className="flex items-center justify-between pt-1"><span className="grid h-9 w-9 place-items-center rounded-lg bg-orange-50 text-accent-strong"><Cloud className="h-4 w-4" /></span><span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">Open-ended</span></span><span aria-hidden="true" className="mt-3 grid h-24 place-items-center rounded-lg bg-[#F7F8FA]"><span className="relative grid h-16 w-20 place-items-center rounded-full bg-white text-accent-strong shadow-sm"><Cloud className="h-8 w-8" /><i className="absolute left-1 top-4 h-2 w-2 rounded-full bg-primary/20" /><i className="absolute right-1 top-6 h-3 w-3 rounded-full bg-accent/30" /><i className="absolute bottom-1 left-7 h-2 w-2 rounded-full bg-primary/30" /></span></span><span className="mt-3 block text-base font-bold tracking-tight text-[#142E59]">Word Cloud</span><span className="mt-1 block min-h-10 text-sm leading-5 text-muted">Collect ideas and short responses from your audience.</span><span className="mt-3 inline-flex min-h-9 items-center gap-2 text-sm font-bold text-primary">Choose Word Cloud<ArrowRight className="h-4 w-4 text-accent-strong transition-transform group-hover:translate-x-0.5" /></span></button>
-        <button type="button" onClick={() => addQuestion('multipleChoice')} className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-white p-4 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"><span className="absolute inset-x-0 top-0 h-1 bg-primary" /><span className="flex items-center justify-between pt-1"><span className="grid h-9 w-9 place-items-center rounded-lg bg-primary-soft text-primary"><BarChart3 className="h-4 w-4" /></span><span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted">Quick polls</span></span><span aria-hidden="true" className="mt-3 block h-24 rounded-lg bg-[#F7F8FA] p-3"><span className="block text-[11px] font-semibold text-text">Which topic next?</span>{[['Product ideas', 76], ['Customer stories', 56], ['Team culture', 34]].map(([label, width], index) => <span key={label} className="mt-1.5 flex items-center gap-1.5"><span className={`h-3 w-3 shrink-0 rounded-full border ${index === 0 ? 'border-primary bg-primary' : 'border-slate-300 bg-white'}`} /><span className="min-w-0 flex-1 truncate text-[9px] text-muted">{label}</span><span className="h-1 w-10 overflow-hidden rounded-full bg-white"><span className="block h-full rounded-full bg-primary/70" style={{ width: `${width}%` }} /></span></span>)}</span><span className="mt-3 block text-base font-bold tracking-tight text-[#142E59]">Multiple Choice</span><span className="mt-1 block min-h-10 text-sm leading-5 text-muted">Let participants choose from predefined answers.</span><span className="mt-3 inline-flex min-h-9 items-center gap-2 text-sm font-bold text-primary">Choose Multiple Choice<ArrowRight className="h-4 w-4 text-accent-strong transition-transform group-hover:translate-x-0.5" /></span></button>
+  if (loading) {
+    return (
+      <div className="min-h-screen grid place-items-center text-primary bg-background">
+        <div className="flex items-center gap-2">
+          <Loader2 className="animate-spin h-5 w-5" />
+          <span>Loading survey…</span>
+        </div>
       </div>
-    </Modal>
-  </div>;
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background transition-colors duration-200">
+      {/* Editor Header */}
+      <header className="sticky top-0 z-20 bg-surface/90 backdrop-blur-md border-b border-border px-4 sm:px-8 py-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link
+            onClick={leaveEditor}
+            to="/dashboard"
+            className="rounded-xl p-2 text-muted hover:bg-surface-secondary hover:text-text transition-colors"
+            aria-label="Back to dashboard"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <Logo size="md" />
+          <span className="hidden sm:block text-xs font-semibold text-muted border-l border-border pl-3">
+            {id ? 'Edit Survey' : 'New Survey'}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+
+          <button
+            type="button"
+            onClick={() => setPreview(true)}
+            disabled={saving}
+            className="ui-interactive inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-text hover:bg-surface-secondary disabled:opacity-50"
+          >
+            <Eye className="h-4 w-4" />
+            <span className="hidden sm:inline">Preview</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleSave('draft')}
+            disabled={saving}
+            className="ui-interactive inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-text hover:bg-surface-secondary disabled:opacity-50"
+          >
+            {saving && !startingSession ? (
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            ) : (
+              <Save className="h-4 w-4 text-muted" />
+            )}
+            <span>Save Draft</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleStartLiveSession}
+            disabled={saving || startingSession}
+            className="ui-interactive inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white shadow-soft hover:bg-primary-hover disabled:opacity-50"
+          >
+            {startingSession ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Radio className="h-4 w-4 text-accent" />
+            )}
+            <span>{startingSession ? 'Launching…' : 'Start Live Session'}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Editor Body */}
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:py-10 space-y-7">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text">
+            {id ? 'Edit Survey' : 'Create a Survey'}
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-muted">
+            Configure questions, reorder options, and launch a real-time polling room.
+          </p>
+        </div>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-xs sm:text-sm text-red-600 dark:text-red-400"
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Survey Details Card */}
+        <section className="space-y-4 rounded-card border border-border bg-surface p-5 sm:p-7 shadow-soft">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-text">Survey Details</h2>
+            <Badge variant={status === 'published' ? 'success' : 'neutral'}>
+              {status === 'published' ? 'Published' : 'Draft'}
+            </Badge>
+          </div>
+
+          <Input
+            id="survey-title"
+            label={
+              <>
+                Title <span className="text-primary">*</span>
+              </>
+            }
+            maxLength={120}
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              setDirty(true);
+            }}
+            placeholder="e.g. Q4 Company All-Hands Feedback"
+          />
+
+          <Textarea
+            id="survey-description"
+            label="Description (optional)"
+            maxLength={500}
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              setDirty(true);
+            }}
+            rows={3}
+            placeholder="Provide context or instructions for your audience..."
+          />
+        </section>
+
+        {/* Questions Section */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-text">
+                Questions <span className="text-muted font-normal">({questions.length})</span>
+              </h2>
+              <p className="mt-0.5 text-xs text-muted">Supported types: Multiple Choice & Word Cloud</p>
+            </div>
+            <Button onClick={() => setAddQuestionOpen(true)} disabled={questions.length >= 200}>
+              <Plus className="h-4 w-4" />
+              <span>Add Question</span>
+            </Button>
+          </div>
+
+          {questions.length === 0 && (
+            <div className="rounded-card border border-dashed border-border bg-surface p-10 text-center">
+              <p className="font-bold text-text">Start with a question</p>
+              <p className="mt-1 text-xs text-muted">
+                Choose Multiple Choice or Word Cloud to begin building.
+              </p>
+              <Button className="mt-4" onClick={() => setAddQuestionOpen(true)}>
+                <Plus className="h-4 w-4" />
+                <span>Add First Question</span>
+              </Button>
+            </div>
+          )}
+
+          {questions.map((question, index) => (
+            <article
+              key={question.id}
+              className="space-y-4 rounded-card border border-border bg-surface p-5 sm:p-6 shadow-soft"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="grid h-7 w-7 place-items-center rounded-lg bg-surface-secondary text-xs font-bold text-primary">
+                    {index + 1}
+                  </span>
+                  <Badge variant={question.type === 'wordCloud' ? 'accent' : 'primary'}>
+                    {question.type === 'wordCloud' ? 'Word Cloud' : 'Multiple Choice'}
+                  </Badge>
+                  <select
+                    aria-label={`Question ${index + 1} type`}
+                    value={question.type === 'multipleChoice' ? 'multipleChoice' : 'wordCloud'}
+                    onChange={(e) => changeQuestionType(question.id, e.target.value)}
+                    className="min-h-9 rounded-lg border border-border bg-surface px-2.5 text-xs text-text focus:outline-none focus:border-primary"
+                  >
+                    <option value="wordCloud">Word Cloud</option>
+                    <option value="multipleChoice">Multiple Choice</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    title="Move up"
+                    aria-label="Move question up"
+                    disabled={index === 0}
+                    onClick={() => moveQuestion(index, -1)}
+                    className="rounded-lg p-2 text-muted hover:bg-surface-secondary hover:text-text disabled:opacity-30"
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Move down"
+                    aria-label="Move question down"
+                    disabled={index === questions.length - 1}
+                    onClick={() => moveQuestion(index, 1)}
+                    className="rounded-lg p-2 text-muted hover:bg-surface-secondary hover:text-text disabled:opacity-30"
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Duplicate question"
+                    aria-label="Duplicate question"
+                    onClick={() => {
+                      const copy = {
+                        ...question,
+                        id: makeId(),
+                        options: (question.options || []).map((opt) => ({ ...opt, id: makeId() })),
+                      };
+                      setQuestions((curr) => [
+                        ...curr.slice(0, index + 1),
+                        copy,
+                        ...curr.slice(index + 1),
+                      ]);
+                      setDirty(true);
+                    }}
+                    className="rounded-lg p-2 text-muted hover:bg-surface-secondary hover:text-text"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Delete question"
+                    aria-label="Delete question"
+                    onClick={() => setConfirmDeleteQuestion(question.id)}
+                    className="rounded-lg p-2 text-danger hover:bg-red-500/10"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <Input
+                id={`question-${question.id}`}
+                label="Question Prompt"
+                value={question.text}
+                onChange={(e) => updateQuestion(question.id, { text: e.target.value })}
+                maxLength={300}
+                placeholder={
+                  question.type === 'wordCloud'
+                    ? 'Describe our workplace culture in one word...'
+                    : 'Which strategic initiative should we focus on next?'
+                }
+              />
+
+              {question.type === 'wordCloud' ? (
+                <div className="max-w-xs space-y-1.5">
+                  <label
+                    htmlFor={`length-${question.id}`}
+                    className="block text-xs font-semibold text-muted"
+                  >
+                    Maximum Character Length (1–280)
+                  </label>
+                  <input
+                    id={`length-${question.id}`}
+                    type="number"
+                    min={1}
+                    max={280}
+                    value={question.maxLength}
+                    onChange={(e) =>
+                      updateQuestion(question.id, {
+                        maxLength: e.target.value === '' ? '' : Number(e.target.value),
+                      })
+                    }
+                    className="ui-field min-h-10 text-sm max-w-[120px]"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-text">
+                      Answer Options ({question.options.length}/20)
+                    </span>
+                    <button
+                      type="button"
+                      disabled={question.options.length >= 20}
+                      onClick={() =>
+                        updateQuestion(question.id, {
+                          options: [...question.options, { id: makeId(), label: '' }],
+                        })
+                      }
+                      className="font-bold text-primary hover:underline disabled:opacity-40"
+                    >
+                      + Add Option
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {question.options.map((option, optIdx) => (
+                      <div key={option.id} className="flex items-center gap-2">
+                        <span className="w-5 text-center font-mono text-xs font-bold text-muted">
+                          {String.fromCharCode(65 + optIdx)}
+                        </span>
+                        <input
+                          aria-label={`Option ${optIdx + 1}`}
+                          value={option.label}
+                          maxLength={120}
+                          onChange={(e) =>
+                            updateQuestion(question.id, {
+                              options: question.options.map((item) =>
+                                item.id === option.id ? { ...item, label: e.target.value } : item
+                              ),
+                            })
+                          }
+                          placeholder={`Option ${optIdx + 1}`}
+                          className="ui-field min-h-10 flex-1 py-1.5 text-xs sm:text-sm"
+                        />
+                        <button
+                          type="button"
+                          aria-label="Move option up"
+                          disabled={optIdx === 0}
+                          onClick={() => {
+                            const next = [...question.options];
+                            [next[optIdx - 1], next[optIdx]] = [next[optIdx], next[optIdx - 1]];
+                            updateQuestion(question.id, { options: next });
+                          }}
+                          className="rounded-lg p-2 border border-border text-muted hover:text-text disabled:opacity-30"
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Move option down"
+                          disabled={optIdx === question.options.length - 1}
+                          onClick={() => {
+                            const next = [...question.options];
+                            [next[optIdx + 1], next[optIdx]] = [next[optIdx], next[optIdx + 1]];
+                            updateQuestion(question.id, { options: next });
+                          }}
+                          className="rounded-lg p-2 border border-border text-muted hover:text-text disabled:opacity-30"
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Remove option"
+                          disabled={question.options.length <= 2}
+                          onClick={() =>
+                            updateQuestion(question.id, {
+                              options: question.options.filter((item) => item.id !== option.id),
+                            })
+                          }
+                          className="rounded-lg p-2 border border-red-500/20 text-danger hover:bg-red-500/10 disabled:opacity-30"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {validateQuestion(question, index) && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  {validateQuestion(question, index)}
+                </p>
+              )}
+
+              {confirmDeleteQuestion === question.id && (
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3.5 flex items-center justify-between gap-3 animate-in fade-in">
+                  <span className="text-xs font-semibold text-danger">Delete this question?</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteQuestion(null)}
+                      className="px-3 py-1 rounded-lg border border-border text-xs text-text hover:bg-surface"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuestions((curr) => curr.filter((item) => item.id !== question.id));
+                        setConfirmDeleteQuestion(null);
+                        setDirty(true);
+                      }}
+                      className="px-3 py-1 rounded-lg bg-danger text-white text-xs font-semibold shadow-xs"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )}
+            </article>
+          ))}
+        </section>
+
+        {/* Sticky Action Footer */}
+        <footer className="sticky bottom-4 z-10 flex flex-col items-start justify-between gap-3 rounded-card border border-border bg-surface/95 p-4 shadow-card backdrop-blur-md sm:flex-row sm:items-center">
+          <p className="text-xs text-muted">
+            {saving ? 'Saving…' : dirty ? 'Unsaved changes' : 'All changes saved'}{' '}
+            · Private to your host account.
+          </p>
+
+          <div className="flex w-full gap-2 sm:w-auto">
+            <Button
+              variant="secondary"
+              onClick={() => handleSave('draft')}
+              disabled={saving || Boolean(titleError)}
+              className="flex-1 sm:flex-none"
+            >
+              Save Draft
+            </Button>
+            <Button
+              onClick={() => handleSave('published')}
+              disabled={
+                saving ||
+                Boolean(titleError) ||
+                !questions.length ||
+                Boolean(validationErrors.length)
+              }
+              className="flex-1 sm:flex-none"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              Publish
+            </Button>
+          </div>
+        </footer>
+      </main>
+
+      {/* Audience Preview Modal */}
+      {preview && (
+        <AudiencePreview
+          survey={{ title, description, questions }}
+          onClose={() => setPreview(false)}
+        />
+      )}
+
+      {/* Add Question Modal */}
+      <Modal
+        open={addQuestionOpen}
+        onClose={() => setAddQuestionOpen(false)}
+        title="Add a Question"
+        description="Choose a question format for your audience."
+      >
+        <div className="grid gap-4 sm:grid-cols-2 pt-2">
+          <button
+            type="button"
+            onClick={() => addQuestion('multipleChoice')}
+            className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-surface p-5 text-left shadow-soft hover:border-primary/50 hover:shadow-card transition-all"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft text-primary">
+                  <BarChart3 className="h-5 w-5" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted bg-surface-secondary px-2 py-0.5 rounded">
+                  Quick Poll
+                </span>
+              </div>
+              <h3 className="font-bold text-text text-base group-hover:text-primary transition-colors">
+                Multiple Choice
+              </h3>
+              <p className="mt-1 text-xs text-muted leading-relaxed">
+                Provide predefined options and collect votes with live percentage distribution.
+              </p>
+            </div>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-primary">
+              Choose Multiple Choice
+              <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => addQuestion('wordCloud')}
+            className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-surface p-5 text-left shadow-soft hover:border-accent hover:shadow-card transition-all"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-accent/15 text-accent">
+                  <Cloud className="h-5 w-5" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted bg-surface-secondary px-2 py-0.5 rounded">
+                  Open Ended
+                </span>
+              </div>
+              <h3 className="font-bold text-text text-base group-hover:text-primary transition-colors">
+                Word Cloud
+              </h3>
+              <p className="mt-1 text-xs text-muted leading-relaxed">
+                Allow short free-form answers that dynamically cluster into an animated word cloud.
+              </p>
+            </div>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-primary">
+              Choose Word Cloud
+              <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform text-accent" />
+            </span>
+          </button>
+        </div>
+      </Modal>
+    </div>
+  );
 }
