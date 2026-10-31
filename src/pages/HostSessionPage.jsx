@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import {
@@ -27,7 +27,6 @@ import { useToast } from '../contexts/ToastContext';
 import {
   getHostSession,
   getJoinUrl,
-  isUsingFallbackProductionOrigin,
   subscribeHostSession,
   subscribeSessionVotes,
   uniqueParticipantCount,
@@ -52,6 +51,7 @@ export default function HostSessionPage() {
   const [listening, setListening] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [error, setError] = useState('');
+  const statusUpdateInFlight = useRef(false);
 
   const joinUrl = useMemo(() => (session ? getJoinUrl(session.joinCode) : ''), [session]);
   const participantCount = uniqueParticipantCount(votes);
@@ -119,22 +119,31 @@ export default function HostSessionPage() {
   }, [id, user?.uid]);
 
   const handleStatus = async (status) => {
-    if (saving) return;
+    if (statusUpdateInFlight.current || saving) return;
+    statusUpdateInFlight.current = true;
     setSaving(true);
     setError('');
     try {
-      const updated = await updateSessionStatus(id, user.uid, status);
-      setSession(updated);
+      const result = await updateSessionStatus(id, user?.uid, status);
+      if (!result?.success || !result.session) {
+        const serviceError = new Error(result?.error?.message || 'The session update did not complete. Please retry.');
+        serviceError.code = result?.error?.code;
+        throw serviceError;
+      }
+
+      setSession(result.session);
       toast.success(status === 'active' ? 'Session reopened for audience responses' : 'Session closed. Voting is paused.');
+      if (status === 'closed') navigate('/dashboard', { replace: true });
     } catch (actionError) {
       logFirestorePermissionFailure('updateSessionStatus', ['sessions/{sessionId}'], actionError);
       const msg =
-        actionError.code === 'permission-denied'
+        actionError?.code === 'permission-denied'
           ? 'Firestore denied this session update. Confirm you are the survey owner and that firestore.rules are published.'
-          : actionError.message || 'Could not update the session. Please retry.';
+          : actionError?.message || 'Could not update the session. Please retry.';
       setError(msg);
       toast.error(msg);
     } finally {
+      statusUpdateInFlight.current = false;
       setSaving(false);
     }
   };
@@ -333,11 +342,6 @@ export default function HostSessionPage() {
                 </a>
               </div>
 
-              {isUsingFallbackProductionOrigin() && (
-                <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">
-                  QR and join links route through production so participant phones never get unreachable localhost.
-                </p>
-              )}
             </div>
 
             <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-4 text-xs text-muted">

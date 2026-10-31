@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import DashboardSidebar from '../components/dashboard/DashboardSidebar';
 import DashboardTopNav from '../components/dashboard/DashboardTopNav';
@@ -29,7 +29,9 @@ const firestoreError = (error) => {
 export default function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState('surveys'); // 'home' | 'surveys' | 'templates' | 'analytics' | 'profile' | 'settings'
+  const [currentView, setCurrentView] = useState('home'); // 'home' | 'surveys' | 'templates' | 'analytics' | 'profile' | 'settings'
+  const [navigationRequest, setNavigationRequest] = useState(0);
+  const pendingNavigationTarget = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [surveys, setSurveys] = useState([]);
@@ -63,6 +65,48 @@ export default function DashboardPage() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const target = pendingNavigationTarget.current;
+    if (!target) return undefined;
+
+    const frame = window.requestAnimationFrame(() => {
+      if (target === 'home') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        document.getElementById('dashboard-my-surveys')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      }
+      pendingNavigationTarget.current = null;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [navigationRequest]);
+
+  useEffect(() => {
+    if (!['home', 'surveys'].includes(currentView)) return undefined;
+
+    const updateCurrentSection = () => {
+      const surveysSection = document.getElementById('dashboard-my-surveys');
+      if (!surveysSection) return;
+      setCurrentView(surveysSection.getBoundingClientRect().top <= 96 ? 'surveys' : 'home');
+    };
+
+    window.addEventListener('scroll', updateCurrentSection, { passive: true });
+    return () => window.removeEventListener('scroll', updateCurrentSection);
+  }, [currentView]);
+
+  const handleSelectView = (view) => {
+    setCurrentView(view);
+    if (view === 'home' || view === 'surveys') {
+      pendingNavigationTarget.current = view;
+      setNavigationRequest((request) => request + 1);
+    } else {
+      pendingNavigationTarget.current = null;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const handleDelete = async (survey) => {
     setDeletingId(survey.id);
@@ -123,10 +167,7 @@ export default function DashboardPage() {
     <div className="flex min-h-screen bg-background transition-colors duration-200">
       <DashboardSidebar
         currentView={currentView}
-        onSelectView={(view) => {
-          setCurrentView(view);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+        onSelectView={handleSelectView}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -141,16 +182,17 @@ export default function DashboardPage() {
         <main className="mx-auto w-full max-w-7xl flex-1 space-y-8 p-4 sm:p-6 lg:p-8">
           {(currentView === 'home' || currentView === 'surveys') && (
             <>
-              {/* Welcome Banner with Real Metrics */}
-              <WelcomeBanner
+              <section id="dashboard-home" className="scroll-mt-24 space-y-8">
+                {/* Welcome Banner with Real Metrics */}
+                <WelcomeBanner
                 displayName={user?.displayName || user?.email || ''}
                 totalSurveys={surveys.length}
                 activeSessions={activeSessions.length}
                 totalParticipants={sessions.length * 12} // Aggregate activity indicator
-              />
+                />
 
               {/* Active Sessions Quick Access Banner */}
-              {activeSessions.length > 0 && (
+                {activeSessions.length > 0 && (
                 <section className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h2 className="text-base font-bold tracking-tight text-text flex items-center gap-2">
@@ -192,10 +234,11 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 </section>
-              )}
+                )}
+              </section>
 
               {/* My Surveys Section */}
-              <section className="space-y-4">
+              <section id="dashboard-my-surveys" className="scroll-mt-24 space-y-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <h2 className="text-xl font-bold tracking-tight text-text">My Surveys</h2>

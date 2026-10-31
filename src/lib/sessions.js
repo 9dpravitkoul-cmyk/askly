@@ -145,64 +145,88 @@ export async function getHostSession(sessionId, uid) {
 }
 
 export async function updateSessionStatus(sessionId, uid, status) {
-  requireDatabase();
-  if (!uid) throw new Error('Sign in to manage this session.');
-  if (!['active', 'closed'].includes(status)) throw new Error('Session status is invalid.');
-  const sessionRef = doc(db, SESSIONS, sessionId);
-
-  return runTransaction(db, async (transaction) => {
-    const sessionSnapshot = await transaction.get(sessionRef);
-    if (!sessionSnapshot.exists() || sessionSnapshot.data().ownerUid !== uid) {
-      throw new Error('Session not found, or you do not have permission to manage it.');
-    }
-    const current = sessionSnapshot.data();
-    const lockRef = doc(db, LOCKS, current.surveyId);
-    const lookupRef = doc(db, LOOKUPS, current.joinCode);
-    const [surveySnapshot, lockSnapshot, lookupSnapshot] = await Promise.all([
-      transaction.get(doc(db, 'surveys', current.surveyId)),
-      transaction.get(lockRef),
-      transaction.get(lookupRef),
-    ]);
-    if (!surveySnapshot.exists() || surveySnapshot.data().ownerUid !== uid) {
-      throw new Error('The owning survey is unavailable.');
-    }
-    if (lookupSnapshot.exists() && lookupSnapshot.data().sessionId !== sessionId) {
-      throw new Error('The public join code record points to a different session.');
-    }
-    if (lookupSnapshot.exists() && lookupSnapshot.data().surveyId && lookupSnapshot.data().surveyId !== current.surveyId) {
-      throw new Error('The public join code points to a different survey. Refresh the page and try again.');
-    }
-    if (status === 'active' && lockSnapshot.exists()
-      && lockSnapshot.data().status === 'active'
-      && lockSnapshot.data().sessionId !== sessionId) {
-      const otherSnapshot = await transaction.get(doc(db, SESSIONS, lockSnapshot.data().sessionId));
-      if (otherSnapshot.exists() && otherSnapshot.data().status === 'active') {
-        throw new Error('Another live session is already active for this survey. Close it before reopening this one.');
-      }
-    }
-
-    const timestamp = serverTimestamp();
-    transaction.update(sessionRef, { status, updatedAt: timestamp });
-    // Repair older or missing lookup records from the authoritative session
-    // while applying the status transition.
-    transaction.set(lookupRef, {
-      sessionId,
-      surveyId: current.surveyId,
-      surveyTitle: current.surveyTitle,
-      status,
-      createdAt: lookupSnapshot.exists() ? lookupSnapshot.data().createdAt : current.createdAt,
-      updatedAt: timestamp,
-    });
-    transaction.set(lockRef, {
-      ownerUid: uid,
-      surveyId: current.surveyId,
-      sessionId,
-      status,
-      updatedAt: timestamp,
-    });
-    // Return only after Firestore has committed all three synchronized writes.
-    return { id: sessionId, ...current, status };
+  const failure = (error) => ({
+    success: false,
+    session: null,
+    error: {
+      code: error?.code || 'session-status-update-failed',
+      message: error?.message || 'Could not update the session. Please retry.',
+    },
   });
+
+  try {
+    requireDatabase();
+    if (!sessionId || !uid) throw new Error('Sign in to manage this session.');
+    if (!['active', 'closed'].includes(status)) throw new Error('Session status is invalid.');
+    const sessionRef = doc(db, SESSIONS, sessionId);
+
+    const session = await runTransaction(db, async (transaction) => {
+      const sessionSnapshot = await transaction.get(sessionRef);
+      if (!sessionSnapshot.exists() || sessionSnapshot.data().ownerUid !== uid) {
+        throw new Error('Session not found, or you do not have permission to manage it.');
+      }
+      const current = sessionSnapshot.data();
+      const lockRef = doc(db, LOCKS, current.surveyId);
+      const lookupRef = doc(db, LOOKUPS, current.joinCode);
+      const [surveySnapshot, lockSnapshot, lookupSnapshot] = await Promise.all([
+        transaction.get(doc(db, 'surveys', current.surveyId)),
+        transaction.get(lockRef),
+        transaction.get(lookupRef),
+      ]);
+      if (!surveySnapshot.exists() || surveySnapshot.data().ownerUid !== uid) {
+        throw new Error('The owning survey is unavailable.');
+      }
+      if (lookupSnapshot.exists() && lookupSnapshot.data().sessionId !== sessionId) {
+        throw new Error('The public join code record points to a different session.');
+      }
+      if (lookupSnapshot.exists() && lookupSnapshot.data().surveyId && lookupSnapshot.data().surveyId !== current.surveyId) {
+        throw new Error('The public join code points to a different survey. Refresh the page and try again.');
+      }
+      if (status === 'active' && lockSnapshot.exists()
+        && lockSnapshot.data().status === 'active'
+        && lockSnapshot.data().sessionId !== sessionId) {
+        const otherSnapshot = await transaction.get(doc(db, SESSIONS, lockSnapshot.data().sessionId));
+        if (otherSnapshot.exists() && otherSnapshot.data().status === 'active') {
+          throw new Error('Another live session is already active for this survey. Close it before reopening it.');
+        }
+      }
+
+      const timestamp = serverTimestamp();
+      transaction.update(sessionRef, { status, updatedAt: timestamp });
+      // Repair older or missing lookup records while applying the status transition.
+      transaction.set(lookupRef, {
+        sessionId,
+        surveyId: current.surveyId,
+        surveyTitle: current.surveyTitle,
+        status,
+        createdAt: lookupSnapshot.exists() ? lookupSnapshot.data().createdAt : current.createdAt,
+        updatedAt: timestamp,
+      });
+      transaction.set(lockRef, {
+        ownerUid: uid,
+        surveyId: current.surveyId,
+        sessionId,
+        status,
+        updatedAt: timestamp,
+      });
+      // The transaction resolves only after all three synchronized writes commit.
+      return { id: sessionId, ...current, status };
+    });
+
+    if (!session || session.id !== sessionId || session.status !== status) {
+      throw new Error('The session status update did not return a confirmed session. Please retry.');
+    }
+
+    return { success: true, session, error: null };
+  } catch (error) {
+    console.error('[sessions] Failed to update session status', {
+      sessionId,
+      status,
+      code: error?.code || 'unknown',
+      message: error?.message || 'Unknown session status update error',
+    });
+    return failure(error);
+  }
 }
 
 export async function getPublicSessionByCode(inputCode) {
